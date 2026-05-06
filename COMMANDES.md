@@ -238,25 +238,17 @@ lerobot-train \
   --batch_size=4
 ```
 
-
-
-
-
-
-
-
-
-
+```bash
 mjpython Task_manager.py --pick models/so100_pick_v9_r-v2.zip \
                        --place models/so100_place_v1.zip \
                        --episodes 5 --speed 1 --debug-reward
+```
 
 
 
 
 
-
-
+```bash
 lerobot-record \
     --robot.type=so101_follower \
     --robot.port=/dev/tty.usbmodem59700734041 \
@@ -272,8 +264,9 @@ lerobot-record \
     --dataset.streaming_encoding=true \
     --dataset.encoder_threads=2 \
     --resume=true
+```
 
-
+```bash
 HF_USER=$(NO_COLOR=1 hf auth whoami | awk -F': *' 'NR==1 {print $2}') && \
 lerobot-record \
     --robot.type=so101_follower \
@@ -290,3 +283,4 @@ lerobot-record \
     --dataset.streaming_encoding=true \
     --dataset.encoder_threads=2 \
     --resume=true
+```
