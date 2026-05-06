@@ -88,11 +88,7 @@ lerobot-record \
   --dataset.encoder_threads=2 \
   --policy.path=${HF_USER}/my_pick_place
 ```
-  # --dataset.vcodec=auto \
-  # <- Teleop optional if you want to teleoperate in between episodes \
-  # --teleop.type=so100_leader \
-  # --teleop.port=/dev/ttyACM0 \
-  # --teleop.id=my_red_leader_arm \
+
 
 ```bash
 lerobot-record \
@@ -109,7 +105,6 @@ lerobot-record \
 
 
 ## Hugging face Tokens :
-Create a write token at https://huggingface.co/settings/tokens and store it in an environment variable (e.g. `HF_TOKEN`). Never commit tokens to git.
 ```bash
 hf auth login --token "$HF_TOKEN" --add-to-git-credential
 ```
@@ -134,6 +129,7 @@ Limites des joints :
 
 
 ## Dans so100-mujoco-rl
+```bash
 cd so100-mujoco-rl
 pixi run main -a PPO train -e Env01
 pixi run main -a PPO -m models/Env01_PPO/best_model.zip test -e Env01
@@ -141,7 +137,7 @@ pixi run main -a PPO -m models/Env06_PPO/best_model.zip test -e Env06
 pixi run main -a PPO -m models/Env06_PPO/Env06_PPO_cp__1400000_steps.zip test -e Env06
 pixi run main -a PPO -m models/Env06_PPO/Env06_PPO_cp__680000_steps.zip test -e Env06
 pixi run main -a SAC -m models/Env06_SAC/best_model.zip test -e Env06
-
+```
 ## Dans jsp quoi
 Pour lancer éval d'un modèle SAC trained to reach le cube
 mjpython eval_reach_sac.py --model outputs/reach_sac/best_model.zip \
@@ -229,7 +225,7 @@ python lerobot/scripts/train.py \
   --batch_size=64 \
   --steps=20000  # 10% of training budget
 ```
-
+```bash
 lerobot-train \
   --dataset.repo_id=${HF_USER}/<dataset> \
   --output_dir=./outputs/[RUN_NAME] \
@@ -240,7 +236,7 @@ lerobot-train \
   --policy.device=cuda \
   --steps=100000 \
   --batch_size=4
-
+```
 
 
 
