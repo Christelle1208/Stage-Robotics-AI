@@ -1,0 +1,58 @@
+_wandb:
+    value:
+        cli_version: 0.24.2
+        e:
+            gfocu4io4hq0cvgxa98iwpg5qlgdp3bz:
+                apple:
+                    ecpuCores: 2
+                    gpuCores: 16
+                    memoryGb: 32
+                    name: Apple M1 Pro
+                    pcpuCores: 8
+                    ramTotalBytes: "34359738368"
+                args:
+                    - --pretrained_path=hf://rail-berkeley/octo-small-1.5
+                    - --data_path=so100_dataset.npz
+                    - --save_dir=./octo_so100_finetuned
+                codePath: finetune_octo.py
+                codePathLocal: finetune_octo.py
+                cpu_count: 10
+                cpu_count_logical: 10
+                disk:
+                    /:
+                        total: "494384795648"
+                        used: "127005872128"
+                email: christelle.nollet@octo.com
+                executable: /Users/christelle.nollet/miniconda3/envs/octo/bin/python
+                host: AMAFJDJF06J6K
+                memory:
+                    total: "34359738368"
+                os: macOS-15.7.3-arm64-arm-64bit
+                program: /Users/christelle.nollet/Desktop/ROBOT/finetune_octo.py
+                python: CPython 3.10.19
+                root: /Users/christelle.nollet/Desktop/ROBOT
+                startedAt: "2026-03-10T15:06:00.121182Z"
+                writerId: gfocu4io4hq0cvgxa98iwpg5qlgdp3bz
+        m: []
+        python_version: 3.10.19
+        t:
+            "1":
+                - 2
+                - 3
+                - 12
+                - 45
+            "2":
+                - 1
+                - 2
+                - 3
+                - 11
+                - 12
+                - 45
+                - 49
+                - 71
+            "3":
+                - 13
+            "4": 3.10.19
+            "5": 0.24.2
+            "12": 0.24.2
+            "13": darwin-arm64

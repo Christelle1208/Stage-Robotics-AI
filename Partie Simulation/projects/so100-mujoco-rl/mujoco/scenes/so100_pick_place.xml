@@ -1,0 +1,76 @@
+<!--
+  SO-100 Pick-and-Place Scene
+  ===========================
+  Uses the unmodified MuJoCo Menagerie SO-100 model.
+  The ee_site is injected at load time by BaseMuJoCoEnv._patch_spec().
+
+  Body / site names consumed by the Python environment:
+    cube body  → task.object_name       = "cube"       (configs/env/so100_pick_place.yaml)
+    goal site  → task.target_site       = "goal_site"
+    ee site    → task.end_effector_site = "ee_site"    (injected by env)
+-->
+<mujoco model="so100_pick_place">
+
+  <include file="../../assets/mujoco_menagerie/trs_so_arm100/so_arm100.xml"/>
+
+  <option timestep="0.004" gravity="0 0 -9.81"/>
+
+  <statistic center="0.12 -0.15 0.08" extent="0.55"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="55" elevation="-25"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient"
+             rgb1="0.30 0.52 0.73" rgb2="0.02 0.02 0.03"
+             width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge"
+             rgb1="0.22 0.29 0.35" rgb2="0.12 0.17 0.21"
+             markrgb="0.75 0.75 0.75" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true"
+              texrepeat="6 6" reflectance="0.15"/>
+    <material name="cube_mat" rgba="0.82 0.23 0.16 1"/>
+    <material name="goal_mat" rgba="0.15 0.82 0.36 0.70"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0.6 0.1 1.4" dir="-0.3 -0.1 -1" directional="true"/>
+    <geom name="floor" type="plane" size="0 0 0.05" material="groundplane"/>
+
+    <!--
+      Cube: size half-extent 0.018 m (36 mm edge).
+      z=0.018 → rests on the floor.
+      (x,y) is randomised at reset by PickPlaceTask.randomize_scene().
+    -->
+    <body name="cube" pos="0.00 -0.31 0.018">
+      <joint name="cube_joint" type="free"/>
+      <geom name="cube_geom" type="box" size="0.018 0.018 0.018"
+            mass="0.08" material="cube_mat"
+            friction="1.2 0.03 0.002"
+            solimp="0.9 0.95 0.001" solref="0.02 1"/>
+    </body>
+
+    <!--
+      Goal marker — randomised at reset.
+      task.target_site = "goal_site"
+    -->
+    <site name="goal_site" type="sphere" size="0.022"
+          pos="0.18 -0.08 0.08" material="goal_mat"/>
+
+    <camera name="track_cam" pos="0.55 -0.55 0.45"
+            xyaxes="0.707 0.707 0 -0.34 0.34 0.88"/>
+  </worldbody>
+
+  <!--
+    Home keyframe: 6 robot DOF + 7 cube free-joint (x y z qw qx qy qz).
+  -->
+  <keyframe>
+    <key name="home"
+         qpos="0 -1.57 1.57 1.57 -1.57 0  0.00 -0.31 0.018 1 0 0 0"
+         ctrl="0 -1.57 1.57 1.57 -1.57 0"/>
+  </keyframe>
+
+</mujoco>

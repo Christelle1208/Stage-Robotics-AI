@@ -1,0 +1,43 @@
+# SO-100 pick-and-place task — environment config
+# Coordinate system: robot faces negative-y direction (from Menagerie scene).
+#
+# Reference geometry (from trs_so_arm100/scene_pick_place.xml):
+#   cube:      pos="0.00 -0.31 0.018", size="0.018 0.018 0.018"
+#   goal site: pos="0.18 -0.08 0.08"
+#   home:      qpos="0 -1.57 1.57 1.57 -1.57 0"
+
+env_id: SO100PickPlace-v0
+# Uses the Menagerie's own scene_pick_place.xml as the base.
+# The ee_site and goal randomisation are handled by the Python env via MjSpec.
+scene_xml: assets/mujoco_menagerie/trs_so_arm100/scene_pick_place.xml
+max_episode_steps: 200
+render_mode: human  # used by scripts only; gym.make(..., render_mode=None) overrides
+
+control:
+  action_scale: 0.05       # radians per step (position delta)
+  control_mode: joint_delta_position
+  use_gripper: true
+
+task:
+  object_name: cube                 # <body name="cube"> in scene XML
+  end_effector_site: ee_site        # confirmed site in assets/robots/so100/so_arm100.xml
+  target_site: goal_site            # site name used in Menagerie pick-place scene
+  success_threshold: 0.04           # metres (object-to-target)
+  lift_height: 0.04                 # metres above floor to count as "lifted"
+  floor_height: 0.0                 # floor z coordinate
+
+randomization:
+  object_range:
+    x: [-0.04, 0.04]
+    y: [-0.33, -0.26]
+  target_range:
+    x: [0.10, 0.22]
+    y: [-0.15, -0.04]
+    z: [0.06, 0.10]
+
+reward:
+  reach_weight: 1.0
+  lift_weight: 2.0
+  place_weight: 4.0
+  success_bonus: 10.0
+  action_penalty: 0.01

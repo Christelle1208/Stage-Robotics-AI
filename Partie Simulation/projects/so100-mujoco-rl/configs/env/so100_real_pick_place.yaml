@@ -1,0 +1,52 @@
+# SO-100 Real-Life Pick-and-Place — environment config
+#
+# Physical setup reproduced:
+#   Table : ~80×60 cm, arm clamped at the near edge (y=0)
+#   Cube  : 5 cm edge (half-extent 0.025 m), ~80 g
+#   Bin   : 10×10×5 cm open box, fixed at (x=0.15, y=-0.25) on the table
+#
+# Coordinate system:
+#   Origin = robot base = table surface level (z=0)
+#   Robot faces −y direction  (table extends y from 0 to −0.60)
+#   x is left/right          (−x = left when facing the table)
+
+env_id: SO100RealPickPlace-v0
+# Uses the Menagerie's plain scene.xml (robot + floor only) as the base.
+# Table, cube, and bin are added programmatically in SO100RealPickPlaceEnv._patch_spec().
+# This ensures meshdir resolves correctly (no include-file path issue).
+scene_xml: assets/mujoco_menagerie/trs_so_arm100/scene.xml
+max_episode_steps: 300
+render_mode: human   # used only by view_scene.py; training uses render_mode=None
+
+control:
+  action_scale: 0.05         # radians per step (position delta)
+  control_mode: joint_delta_position
+  use_gripper: true
+
+task:
+  object_name: cube
+  end_effector_site: ee_site      # injected into Fixed_Jaw by the env
+  target_site: goal_site          # site inside the bin body (see scene XML)
+  success_threshold: 0.05         # metres — generous to account for inside-bin landing
+  lift_height: 0.06               # must lift 6 cm to clear the bin rim (bin is 5 cm tall)
+  floor_height: 0.0               # table surface is the physics floor
+
+randomization:
+  # Cube is placed randomly on the table in front of the arm.
+  object_range:
+    x: [-0.06, 0.06]    # ±6 cm around the robot centre line
+    y: [-0.32, -0.18]   # 18–32 cm in front of the robot
+
+  # The bin is FIXED on the table — goal_site stays inside the bin.
+  # Setting a zero-width range fixes the target at one point each episode.
+  target_range:
+    x: [0.15, 0.15]     # bin centre x = 15 cm to the right
+    y: [-0.25, -0.25]   # bin centre y = 25 cm forward
+    z: [0.040, 0.040]   # 4 cm above table surface = inside the bin
+
+reward:
+  reach_weight: 1.0      # penalty: distance from EE to cube
+  lift_weight: 2.0       # bonus: cube cleared the bin rim
+  place_weight: 5.0      # penalty: distance from cube to bin centre (when lifted)
+  success_bonus: 20.0    # bonus: cube landed inside the bin
+  action_penalty: 0.005  # penalty: encourages smooth motion

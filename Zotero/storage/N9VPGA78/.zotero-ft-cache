@@ -1,0 +1,372 @@
+Hybrid Robot Learning for Automatic Robot Motion
+Planning in Manufacturing
+Siddharth Singha,∗∗, Tian Yub,∗∗, Qing Changa,∗, John Karigiannisb, Shaopeng Liub
+aMechanical & Aerospace Engineering, University of Virginia, 122 Engineer’s Way, Charlottesville, 22903, VA, U.S.A bGeneral Electric Aerospace, 122 Engineer’s Way, Nisskayuna, 22903, NY, U.S.A
+Abstract
+Industrial robots are widely used in diverse manufacturing environments. Nonetheless, how to enable robots to automatically plan trajectories for changing tasks presents a considerable challenge. Further complexities arise when robots operate within work cells alongside machines, humans, or other robots. This paper introduces a multi-level hybrid robot motion planning method combining a task space Reinforcement Learning-based Learning from Demonstration (RL-LfD) agent and a joint-space based Deep Reinforcement Learning (DRL) based agent. A higher level agent learns to switch between the two agents to enable feasible and smooth motion. The feasibility is computed by incorporating reachability, joint limits, manipulability, and collision risks of the robot in the given environment. Therefore, the derived hybrid motion planning policy generates a feasible trajectory that adheres to task constraints. The effectiveness of the method is validated through simulated robotic scenarios and in a real-world setup. Project Website:https: // sites. google. com/ virginia. edu/ isl-hllfdra/ home
+Keywords: Hybrid Learning, Learning from Demonstration, Motion Planning
+∗Corresponding author ∗∗Authors contributed equally
+Email addresses: sks4zk@virginia.edu (Siddharth Singh), Tian.Yu@geaerospace.com (Tian Yu), qc9nq@virginia.edu (Qing Chang), John.Karigiannis@geaerospace.com (John Karigiannis), sliu@geaerospace.com (Shaopeng Liu)
+arXiv:2502.19340v1 [cs.RO] 26 Feb 2025
+
+
+1. Introduction
+In today’s manufacturing settings, there is a clear shift towards agile, intelligent production with an enhanced role for robots [1]. Yet, the industry predominantly leans on pre-programmed robots, necessitating reprogramming even for minimal task adjustments. The associated time and costs in reprogramming these robotic systems present notable challenges [2], [3]. To address challenges in robot motion planning, researchers have developed two main approaches: joint space and task space planning. Joint space planning avoids singularities—including joint limits and obstacles—allowing precise control over individual joints for detailed motion planning [4], [5]. However, it is usually time-consuming and lacks task-level understanding, leading to potential inaccuracies in the end-effector’s motion. Task space planning, on the other hand, focuses on task-centric operations. It is fast and adaptable to different robots but relies on inverse kinematics for joint angle calculations, posing challenges in avoiding singularities, collisions, and joint limits [6], [7]. Hence, a method combining the merits of both approaches while mitigating their limitations is essential. In recent years, with the development and advancement of Artifical Intelligence (AI), Deep Reinforcement Learning (DRL) has become crucial for robot motion planning [8]. For instance, the authors propose a Soft Actor Critic (SAC) based method [9] for self-homing in industrital robotic cell. This method assumes a pre-sensed unknown environment, allowing for policy transfer without extra training. It employs a multi-agent training setting, enhancing state space exploration, with agents sharing experiences and deploying policies collectively. While DRL methods like Deep Q-network (DQN) [10], [11], Deep Deterministic Policy Gradient (DDPG) [6], [12], and Proximal Policy Optimization (PPO) [13] are effective for tasks like pick-andplace and peg-insertion, these methods also face challenges. These challenges include difficulty learning implicit task constraints, requiring extensive data and time, and lacking consistent stability and accuracy. Modifications to work cells or tasks also demand DRL agent retraining or finetuning [14], highlighting the need for ongoing refinement in DRL techniques. Compared with modeling a task and planning the motion of a robot in the DRL-based robot motion planning, human operators are often more intuitive in performing the task. Learning from Demonstrations (LfD) offers a viable strategy for robots
+2
+
+
+to execute similar tasks in Human-Robot Collaboration environments due to its intuitive nature. However, LfD methods currently face challenges with scalability and adaptability [15], [16] The authors have introduced a scalable LfD technique, allowing robots to devise adaptive motion plans from a single demonstration [17]. Although this approach efficiently maps kinematic features to new tasks, its efficacy is limited in complex environments with varied obstacles. Robots often require search algorithms to navigate, making original demonstrations less applicable. Furthermore, task space LfD algorithms may encounter joint-space issues, including self-collisions, reachability, and manipulability limitations [18]. To address these difficulties, this paper introduces a multi-level hybrid robot motion planning method, integrating the task space LfD and joint space DRL-based approaches, aiming to capitalize on their respective strengths while mitigating their limitations. Our multi-level approach incorporates three distinct learning based agents. First a Hierarchical Reinforcement Learning-based LfD (RL-LfD) method is trained to utilized the skill library to generate a trajectory in task space. Then a DRL based agent is trained to overcome infeasible joint trajectories. Lastly, an RL based switching agent is trained, which learns to identify an optimal switching strategy between the skill-based agent and the DRL agent to maximize the feasibility and ensure smooth transition between the trajectories generated by the two agents. The main contributions of this work are:
+1. Feasible Learning based Motion Planning: We leverage both human-demonstrations and DRL to generate motion plans while taking the feasibility factors such as reachability, manipulability, collisioncheck, into account. 2. Multi-level Motion Planning: A multi-level motion planning approach is proposed which includes combining the learning based agents and also learning appropriate switching behavior to generate smooth and safe joint trajectories.
+3. Implicit adherence to task constraints: We further augment LfD agent to devise motion plans for a long-horizon tasks while maintaining joint feasibility ensuring the adherence to task constraints.
+The remainder of this paper is organized as follows: Section 2 entails the mathematical background. In Section 3, the motion planning problem is formulated, and the hybrid motion planning method is introduced. Section 4 introduces the joint space feasibility analysis. The task space HRL-based LfD
+3
+
+
+method and the joint space DRL-based method are discussed in Section 4 and 6. Numerical case studies are provided in Section 7. Section 8 summarizes the conclusion and future work.
+2. Mathematical Background
+2.1. Mathematical Notations
+We define the n−dimensional Euclidean space as Rn. Bold letters are used to define vectors, e.g. v. Matrices are presented by bold capital letters such as A. A set is represented by curly capital letters, e.g. A. The Special Orthogonal Group is represented as SO(3) which is the space of rigid rotations in 3-D space, and the Special Euclidean Group is represented as SE(3) which is the group of rigid transformations in 3-D space.
+2.2. Dual Quaternion
+In this work we define the demonstrations in SE(3) space. To describe the configurations, we utilize a dual quaternion encoding both the rotational and the translational information. In this paper a dual quaternion is defined as
+q = qr + 1
+2 η(qt ⊗ qr) (1)
+where η ̸= 0, but η2 = 0 and ⊗ represents the quaternion multiplication. In eq. 2, qt is the quaternion representing the pure translation of the rigid body, expressed as
+qt = (0, ˆt) (2)
+where ˆt = xiˆ + yjˆ + zkˆ representing the translation in SE(3). Similarly, in eq. 1, qr represents the rotational orientation of the rigid body which is defined as:
+qr = cos( φ
+2 ) + vˆsin(φ
+2 ) (3)
+where vˆ = vxˆi + vyjˆ + vzkˆ, is the unit vector in SE(3) along the axis of rotation and φ is the angle of rotation.
+4
+
+
+2.3. Markov Decision Process Formulation
+A Markov Decision Process (MDP) is a task which satisfies the Markov property; represented by 4 tuple, generally represented as (S, A, P, R). Here S represents the set of states called the state space. A is the set of actions, P (s′|s, a) : S × A × S → [0, 1] ∀ s, s′ ∈ S, a ∈ A, is a probability function which determines the probability transitions to a new state, s′ given a state action pair (s, a). And R : S × A → R is the function that maps the state-action pair to a scalar value which is referred as the reward. A policy π(a|s) : S × A → [0, 1] is a function that maps an action a ∈ A given a state s ∈ S to a probability distribution. If the policy maps the state to a particular action, then it is defined as a deterministic policy and if the mapping leads to a probability distribution, then it is defined as a stochastic policy. In our case, we assume that the policy maps the given state to a distribution, hence our policies are stochastic. The goal of the agent is to learn the policy that maximizes the expected cumulative reward. If the discounted cumulative reward is defined by G = rt + γrt+1 + γ2rt+2 + γ3rt+3 + · · · , where γ is the discounting factor, we can define a Q-function as Qπ(s, a) = E[G|s, a]. Hence, the policy associated to the Q-function is given by
+π(a|s) = arg maax Qπ(s, a) (4)
+Accordingly, the optimal policy is defined as:
+π∗ := arg mπax (Qπ(s, a) = E[G|s, a]) (5)
+3. Hybrid Motion Planning Framework
+In this paper, we delve into a scenario where a robotic manipulator is tasked with performing distinct assignments, such as material handling, painting, assembly, or inspection [18]. Depending on the particular task at hand, various constraints are typically imposed, encompassing factors like initial and target positions, as well as the requirement of specific orientations for the end effector. In manufacturing environments, work cells often exhibit intricate layouts comprising machines, robots, and various components. It is assumed that the position and dimension of the workspace and each component in the workspace are observable. Also, the critical configurations of the new task are given. This research aims to create an effective automated motion planning solution for a robot manipulator, thereby mitigating
+5
+
+
+the need for costly reprogramming when executing diverse tasks within a complex industrial environment. The authors have previously developed two approaches with the same goal. The task space-based robot LfD approach [16] is effective at quickly and accurately learning from a single demonstration but struggles in complex robot environments with various obstacles, requiring search algorithms for navigation. Additionally, it operates in task-space motion planning, potentially encountering issues in joint-space. In contrast, the DRL-based motion planning approach [18] guarantees joint-space solutions but demands substantial data for agent training, involves time-intensive computations, and lacks inherent task-specific constraint adherence.
+3.1. Problem Formulation
+For a 3-D workspace, denoted as W S, joint-space feasibility is estimated, resulting in the formation of a discrete feasibility map, CM ⊂ W S, where each specific pose in CM denotes an end effector configuration, including both position and orientation. CM is divided into two primary regions, the feasible region, F R, and infeasible region, ¬F R, which correspond to the joint-space analysis of each end effector configuration. For ¬F R ⊂ CM , three potential conditions may arise: the manipulator’s end effector might be unable to reach a pose, a self-conflict or collision with workspace obstacles may occur, or the manipulator’s manipulability [19] (a measure of how close a manipulator is to singularity) might diminish. Therefore, F R ⊂ CM represents the desirable region for motion planning. Subsequently, a feasibility map CM is utilized as one of the deciding criterion for the trajectory generated by the task-space robot RL-LfD method (will be introduced in Section 5), referred to as trajLfD. Subsequently, the feasibility map CM and the feasibility of the generated motion plan is utilized to assess the performance of the executed trajectory. It is important to note that trajLfD may encompass segments which are infeasible or pass through the infeasible region. The feasible segments can be represented as F J ⊆ {trajLfD ∩ F R}, while the infeasible segments can be represented as ¬F J ̸⊆ {trajLfD ∩ F R}. For the segments falling within F J , inverse kinematics will be calculated to obtain the joint angles to control the robot. For segments within ¬F J , a DRL approach, which will be introduced in Section 6, is utilized to guide these segments into the F J category, resulting in a feasible trajectory trajDRL.
+6
+
+
+Task Planner
+RL-LfD Agent
+Environment
+DRL Feasibility Agent
+Task Constraints: {HD1, HD2, ... , HDN}
+Feasibility Analysis • Reachability • Joint Limits • Manipulability • Collision Checking
+trajLfD
+trajDRL
+Hybrid Robot Motion Planner
+θ1:n(t)
+RL Switching Agent
+Figure 1: Framework of the proposed multi-level hybrid motion planning technique.
+3.2. Proposed Framework
+In order to address the significant challenge of enabling efficient robot motion planning within complex manufacturing environments and to overcome the challenges posed by both methods (i.e., task-space-based LfD and jointspace-based DRL methods), a novel hybrid approach is introduced. This method aims to systematically integrate the two approaches, utilizing the LfD method for its scalability and task space understanding, and incorporating the DRL-based approach to ensure joint space feasibility. The framework of this approach is shown in Fig.1. Given the task constraints, first a skillbased LfD agent is utilized to generate motion plans, trajLfD. For the portion of the trajectory where the trajectory generated by the motion plan is infeasible we leverage a DRL agent which emphasizes on maintaining feasibility, trajDRL. Lastly, to identify an efficient way to switch between the two agents and generate a seamless motion we train a RL based switching agent. As such, the RL-LfD and DRL motion planning method (see Algorithm 2 in Section 5 and Algorithm 3 in Section 6), can be systematically integrated into a hybrid motion planning approach. The offline training and online execution of the hybrid motion planning method can be shown as Algorithm 1. It is worth noting that, in offline training, a set of tasks are generated randomly to train the RL-LfD motion planning policy, and the data of infeasible segment ¬F J for each trajLfD can be used to train the DRL policy. Since the task space RL-LfD method is a scalable and adaptive method for different tasks, when task changes, the hybrid method does not need to be retrained. In addition, the set of ¬F J represents the region in the workspace where the infeasibility usually happens. With such knowledge obtained from RL-LfD, the DRL method does not need to learn from scratch by searching
+7
+
+
+the whole workspace. This method significantly shrinks the search space and boosts training efficiency. While the two agents are independently feasible, to ensure that the final trajectory is also maintains feasibility constraints and there is a seamless switch between the two agents, we train another RL agent which observes the complete trajectory execution and learns to optimize the switching action. It is referred to as Switching agent (see Section 4.2). This ensures smooth transitions between the motion policies generated by the RLLfD agent and the DRL agent. In online execution, the resulting trajectory, trajfinal, derived from this hybrid approach represents an optimized path that not only satisfies the task space constraints but also is feasible in the joint space.
+4. Joint Space Feasibility Analysis
+This section presents a thorough feasibility study that combines the evaluation of reachability, joint limits, manipulability, and collision checking for the robot, resulting in the creation of a feasibility map. This map will serve the purpose of streamlining the process of hybrid motion planning. The map is leveraged for learning the switching policy which will systematically determine whether to employ an RL-LfD or a DRL-based method to automatically generate a manipulator motion plan.
+4.1. Integrated Feasibility Map
+As such, the RL-LfD and DRL motion planning method (see Algorithm 2 in Section 2 and Algorithm 3 in Section 6), can be systematically integrated into a hybrid motion planning approach using the feasibility map and the Switching policy. The offline training and online execution of the hybrid motion planning method can be shown as Algorithm 1. It is worth noting that, in offline training, a set of tasks are generated randomly to train the RL-LfD motion planning policy, and the data of infeasible segment ¬F J for each trajLfD can be used to train the DRL policy. Since the task space RLLfD method is a scalable and adaptive method for different tasks, when task changes, the hybrid method does not need to be retrained. In addition, the set of ¬F J represents the region in the workspace where the infeasibility usually happens. With such knowledge obtained from RL-LfD, the DRL method does not need to learn from scratch by searching the whole workspace. This method significantly shrinks the search space and boosts training efficiency. In online execution, the resulting trajectory, trajfinal, derived from this hybrid
+8
+
+
+Algorithm 1 Hybrid Method: Offline Training and Online Execution
+1: procedure Offline Training of the Hybrid Method 2: Input: Demonstration Library (LB), W S, Robot 3: Calculate the feasibility map (CM ) 4: Initialize a set of tasks (T K) with random starting and end positions 5: for each T K do
+6: Call Procedure 1 in Algorithm 2 and save each ¬F J 7: end for
+8: Import all ¬F J to Procedure 1 in Algorithm 3 9: Output: Trained DQN of the RL-LfD method and DRL Agent 10: end procedure
+11: procedure Train Switching Agent
+12: Input: New Task (T K), Demonstration Library (LB), W S, Robot 13: Initialize Switching Policy πs 14: Call Algorithm 2 to calculate the task space trajectory trajLfD 15: for the infeasible segment ¬F J do 16: Call Algorithm 3 to calculate the joint space trajectory trajDRL 17: end for
+18: for the feasible segment do 19: Calculate inverse kinematics 20: end for
+21: trajcomb ← Concatenate trajDRL and the joint space F J 22: Call switching policy, πs(trajcomb) and compute total reward rs 23: Update switching agent policy parameters π∗
+s ← πs 24: Output: trajfinal 25: end procedure
+26: procedure Online Execution of the Hybrid Method
+27: Input: New Task (T K), Demonstration Library (LB), W S, Robot 28: Call Algorithm 2 to calculate the task space trajectory trajLfD 29: for the infeasible segment ¬F J do 30: Call Algorithm 3 to calculate the joint space trajectory trajDRL 31: end for
+32: for the feasible segment do 33: Calculate inverse kinematics 34: end for
+35: trajcomb ← Concatenate trajDRL and the joint space F J 36: Input: trajcomb to π∗
+s
+37: Compute optimal switching sequence 38: Output: trajfinal 39: end procedure 9
+
+
+approach represents an optimized path that not only satisfies the task space constraints but also is feasible in the joint space. While existing studies have discussed reachability [20], manipulability [21], and collision checking [22], most of them focus on individual problems. This paper develops a holistic study to integrate all aspects and provide a feasibility map. In this paper, the configuration that integrates position and orientation of the end-effector in SE(3) is represented as a dual-quaternion D ∈ R8, which is an 8-dimensional real algebra isomorphic to the tensor product of the quaternions and the dual numbers [23]. Given a configuration D and the joint limits B ∈ Rn, where n is the degrees of freedom (DoF), the reachability of the manipulator can be determined by checking the existence of solutions to the inverse kinematics IK : D → θ such that θ ∈ B, where θ ∈ Rn is a vector of joint angles. It can be defined as:
+RH(D, B) =
+(
+1, if IK solutions exist
+0, otherwise (6)
+However, if only reachability constraint is considered some poses can be reached but can lose one DOF in translation or rotation. To tackle this problem, manipulability is considered as a second constraint. The conventional measurement of manipulability [19] is given as :
+man(θ) = pdet[J(θ)JT (θ)] (7)
+where J(θ) ∈ Rm×n, m is the DOF of the end-effector and n is the DOF of the robot arm, J(θ) is the Jacobian matrix and JT (θ) is the transpose of J(θ). This is a metric that quantifies the distance between a manipulator state θ and a singularity state θ∗. Such a measurement can provide information about the overall movement ability of the end-effector. By comparing the manipulability man(θ) with the manipulability of the initial pose of the robot man(θ0), the normalized manipulability can be defined as:
+man′ = man(θ)
+man(θ0) (8)
+Furthermore, it is essential to conduct collision checks, especially considering a manipulator’s potential interactions with workspace obstacles or its own components. In this paper, the collision detector in PyBullet [24] is utilized for these collision checks. In PyBullet, the Continuous Collision Detection (CCD) library first simplifies complex objects by decomposing them
+10
+
+
+into simpler convex pieces, and then identifies overlaps of pieces, which furnishes detailed insights such as contact points, contact joint or link indices, and penetration depths. For a configuration θ, the collision index is denoted as COL(θ). Using CCD, if COL(θ) = 1 then there is a collision identified; otherwise, COL(θ) = 0. Therefore, the feasibility measurement of a configuration is found by integrates reachability, manipulability, and collision checking. To compute the feasibility of the workspace we use a tessellation approach. Within the work cell environment W , it is straightforward to define a 3-D workspace, W S, according to task specifications, such as the precise painting of a component at a designated location. W S can then be discretized into small voxels, each with its center signifying the x, y, z position of the end effector. Within each voxel position, the orientation of the end effector in terms of α, β, γ can be further discretized within a task-specific range of [−θ, θ] ⊆ [−π, π]. Consequently, the discretized W S forms a tensor of rank 2, where each array corresponds to a unique end effector configuration. Using Eqn. (4), it becomes possible to assess the feasibility of each end effector configuration within W S. This discretized feasibility assessment can be analogized to a “map”, referred to as CM , which divides the workspace W S into feasible and infeasible regions based on the criterion fea(D). The map CM effectively encapsulates the end effector configuration along with its associated joint space feasibility status. Fig. 2 is a 3D illustration of a feasibility map where both feasibility and unfeasibility regions are color-coded. It is important to acknowledge that the “actual map” encompasses six dimensions, which include both position and orientation, making it impossible to visualize directly. Therefore, each voxel in Fig. 2 includes a specific position but includes a range of orientation that may or may not be in the feasible region, which is represented by a transition color between red (representing feasible) and blue (infeasible).
+4.2. Hybrid Motion Planning with RL based Switching Agent
+For a task tk, using the RL-LfD method, which will be introduced in the next section, a task space trajectory, trajLfD = {D1, D2, . . . , Dn}, can be generated. Starting from D1, by checking the feasibility of each configuration, the infeasible trajectory segment, e.g., ¬F Jij = {Di, Di+1, . . . , Dj}, i, j ∈ {2, . . . , n − 1} can be determined. The DRL method is used to compensate for each ¬F Jij.
+11
+
+
+Figure 2: Schematic picture of the feasibility map in a robotic workspace.
+For many tasks, such as achieving a proper grip for stacking, it is more crucial to mimic the latter part of the trajLfD generated through LfD, rather than the initial stages. This assumption ensures the utilization of DRL motion planning for handling the infeasible segment, ¬F Jij, since DRL-based methods excel at ensuring joint-space feasibility but may not adequately address task-specific constraints. In an effort to minimize ¬F Jij, we anticipate that the transition from trajDRL to trajLfD should be done maximize the feasibility. To ensure that switching occurs seamlessly, at the correct time and to ensure that trajcomb := trajLfD ∪ trajDRL is feasible, we introduce a RL agent, referred to as the Switching Agent. To train the policy for switching action, we execute the trajcomb and observe the award accumulated which encapsulates the feasibility of the trajectory based on the terms defined in the previous section. We define the reward as:
+rs =
+np
+X
+t=0
+(man′(θt) − COL(θt)) (9)
+Here, np are the number of points in the Trajcomb. The observation are the joint trajectories and the action space is a disrcetized one-hot encoded variable which encapsulates the choosing between the two agents. For the
+12
+
+
+purpose of training the switching the agent, the LfD agent and the DRLFeasibility agent It is important to note that when learning from different demonstrations for the same task, tk, various trajectory outcomes, trajLfD, can be achieved. To evaluate each trajLfD, a criterion needs to be established. Notably, the policy generated through the proposed DRL method is not deterministic, leading to varying trajDRL lengths for identical tasks. On the other hand, each trajLfD acquired through learning from a specific demonstration is deterministic in nature. The core concept behind the suggested hybrid approach is to maximize the utilization of LfD motion planning due to its computational efficiency and the generalizability inherent in the proposed LfD method. Consequently, minimizing ¬F Jij serves as the prime criterion when selecting trajLfD, facilitating a highly efficient fusion of trajLfD motion planning and trajDRL motion planning in our hybrid approach. It is important to note that the trajcomb is used for training the switching agent offline.
+5. Task-Space RL based LfD
+In manufacturing, manipulator motion planning can be complex, but human operators can intuitively demonstrate tasks. The authors have created a task-space LfD method for robot manipulators [16], enabling them to learn specific tasks like object grasping or relocation based on a single primitive skill. In this paper, we expand our earlier LfD method. First, a local motion planner is developed by using kinematic task-space planning that follows the implicit geometric constraints throughout a onetime human demonstration of a primitive skill. Then, built upon the local motion planner, a global planner is established, which can enable robots to automatically generate their motion plan for various tasks by intelligently combining a set of demonstrated primitive skills. Local Motion Planner: The authors’ recent work [16] has developed the local motion planner, which is briefly introduced here without delving into technical details for the paper’s self-containment. Let DP = {D1, D2, . . . , Dn} represent a demonstrated primitive skill in the task-space, where Di is a dual quaternion representation for the ith configuration in the time sequence during the motion. The transformation, δi, between the last pose and every other pose is:
+δi = D∗
+(i−1) ⊗ Dn, i = 2, . . . , n (10)
+13
+
+
+Figure 3: Mapping the demonstrated skill (blue line) to the new task with the new starting and goal configuration D′1 and D′n.
+where ⊗ represents dual quaternion multiplication and D∗ denotes the conjugate of D. Thus, the sequence of δi represents a sequence of transformations. Note that all implicit task constraints in a human demonstration are embedded in the sequence of δi during the motion. This sequence can represent the features or semantics of human demonstrations. The feature of the kth human demonstration in the task space can be represented in a time sequence as:
+H Dk = {δ(HDk)
+2 , . . . , δ(HDk)
+n } (11)
+For a new task, tk, a mapping operation, mpHD→tk, is developed, which can align and enforce the feature of the demonstration to the task by using the quaternion sandwich operation [16] ans is shown in Fig. 3. Global Planner: However, manufacturing tasks such as assembly tasks are often complicated, which may include combinations of various primitive skills. Therefore, a library of h demonstrated primitive skills can be formed as:
+LB = {HD1, HD2, . . . , HDh} (12)
+For any task instance, a robot should be able to look at the library of demonstrations and be able to learn and combine the most suitable demonstrations by using the local motion planner. To do this, one may need to go through all possible subsets of new tasks and evaluate each HDk,
+14
+
+
+k = 1, 2, . . . , h, in the library LB, which is an NP-hard problem. The state space of the problem would be huge if the constraints of new tasks and the number of demonstrated skills are large. The problem can be formulated as a model-free reinforcement learning problem in the Markov Decision Process (MDP) framework. In the context of the robot learning global planning, the RL problem is a tuple ⟨S, A, R, S′⟩, and is formulated as follows. The state space S contains a set of system states, which include the current configuration of the end-effector and all possible task segments. Let st denote the system state at time t, st ∈ S, then st is defined as
+st = ⟨EEt, tat⟩ (13)
+where EEt is the current configuration of the robot’s end-effector at t, tat ⊆ T K is the possible task segments at t. The action space A is the set of action pairs for the robot learner to decide on how to segment a new task and what demonstrations should be selected. The action at ∈ A, can be defined as
+at = ⟨tst, HD(t,l)⟩ (14)
+where tst ∈ tat and HD(t,l) ∈ LB. The reward function is determined based on the Euclidean distance between the feature of the demonstration, δ(HDi)
+i , and the feature of a new
+task, δ(tst)
+l , as in [16]. Let ∆β be a predefined tolerance value, then:
+rt =
+(
+−
+Pn
+l=j β(δ(HDi)
+i , δ(tst)
+l ) if β(δ(HDi)
+i , δ(tst)
+l ) ≤ ∆β
+−∞ otherwise (15)
+The standard RL approach needs to simultaneously determine the action pair ⟨tst, HD(t,l)⟩, and the state-action space grows exponentially with the number of features and task-relevant constraints. To alleviate the curse of dimensionality, an RL scheme is developed (see Fig. 4), where the agent uses a two-level hierarchy consisting of a task-controller and a motion-controller with two inter-dependent networks. The task-controller is to find a policy that specifies the subgoal, tst, under the global state st. The task-controller will determine how to segment the new task through estimating the value function Q(st, tst), such that the extrinsic reward, Rt, can be maximized. The Q(st, tst) function of the task-controller is estimated as:
+Q(st, tst) = EπQ[Rt | st = s, tst = ts] (16)
+15
+
+
+Figure 4: Human-in-the-loop LfD based RL scheme
+where πQ is the global policy over subgoals, Rt is the extrinsic reward for the meta-controller and is defined as:
+Rt =
+t
+X
+t′=0
+rt (17)
+where rt is the intrinsic reward for the next level critic-controller. The objective of the task-controller is to find an optimal policy, π∗
+ts, such that Rt can be maximized. π∗
+ts can be defined as:
+π∗
+Q(ts | s) =
+(1, if ts = max
+tst⊆T K{Q(st, tst)}
+0, otherwise
+(18)
+The motion-controller is to continue to determine the policy on specifying the action HD(t,l) under the global state st and the current subgoal, tst, that is flown down from the task-controller. The motion-controller will decide pertinent demonstrated primitive skills by estimating a value function, q(st, tst, HD(t,l)), so that the intrinsic reward, rt, can be maximized. The value function can be written as:
+q(st, tst, HD(t,l)) = Eπ[rt | st = s, tst = ts, HD(t,l) = HDl] (19)
+where ts is the given subgoal from the task-controller in state s, and πq is the policy on how to select human demonstrations. The intrinsic reward, rt, is to compare semantic similarity between the human demonstrations, HD(t,l), and the subgoal, tst, using Eq. (11). The internal critic checks if
+16
+
+
+the subgoal is reached and provides an appropriate intrinsic reward to the controller. The optimal policy π∗
+q of the critic-controller is defined as:
+π∗
+q (HDl | s, ts) =
+
+
+
+1, if HDl = arg max
+H D(t,l) ∈LB
+{q(st, tst, HD(t,l))}
+0, otherwise
+(20)
+The algorithm of offline training and online execution of the RL-LfD method is shown in Algorithm 2.
+Algorithm 2 RL-LfD Method: Offline Training and Online Execution
+1: procedure Offline Training of the RL-LfD Method 2: Input: TK, LB
+3: Initialize H(s, ts) and q(s, ts, HDl) randomly 4: Initialize s0 with EE0 and ta0 5: for t = 1, . . . , T do 6: for t′ = 1, . . . , τ do
+7: Compute rt using Eq. (10) 8: Update qt′(st, tst, HDt′,l) using Eq. (14) 9: end for
+10: Update r ̃t ← Pt
+t′=0 rt′ and update Ht(st, tst) 11: end for
+12: Output: H(s, ta) and q(s, ta, HDl) 13: end procedure
+14: procedure Online Execution of the RL-LfD Method 15: Input: TK, LB, H(s, ta), and q(s, ta, HDl)
+16: while EEt is not the last configuration in TK do 17: Select the task segment ts = arg maxtst⊆T K Q(st, tst) 18: Select the demonstration HDl = arg maxHDt,l∈LB q(st, tst, HDt,l) 19: Mapping mpHDl→ts to calculate trajLfD 20: Update EEt 21: end while 22: Output: trajLfD 23: end procedure
+17
+
+
+6. Joint-Space Feasibility DRL Motion Planner
+As mentioned earlier, in cases where the RL-LfD trajectory enters an infeasible region, three possible scenarios may unfold: the manipulator’s end effector may fail to reach a position, encounter self-conflict or workspace collisions, or experience reduced manipulability below a set tolerance, which constitutes a joint-space failure. To address this issue, the authors build upon our recent work [9] by applying a Deep Reinforcement Learning (DRL) approach. The motion planning problem is formulated as an MDP, and Proximal Policy Optimization algorithm is used in the offline training of the joint space motion planner. PPO belongs to the family of model-free, onpolicy Deep RL algorithms, which achieves strong performance across a wide range of continuous and discrete control tasks while maintaining stability and ease of implementation. After training, this motion planner is then implemented during real-time execution to rectify any unfeasible segments of the LfD trajectory.
+6.1. MDP Formulation
+Given the workspace, the robot and the target position, the primary components of the MDP can be defined as follows. The state space S includes all information regarding the robot and the environment conditions. The state st ∈ S of the RL agent is defined as:
+st = ⟨J Pt, JOt, LVt, AVt, T Pt, T Ot, RLt⟩ (16)
+where JPt, JOt ∈ R3×n, n is the degree of freedom, denotes the x, y, z positions and Euler angles of each joint, respectively; LVt, AVt ∈ R3×n denotes the linear and angular velocities of each joint, respectively; T Pt, T Ot ∈ R3 denotes the x, y, z positions and Euler angles of the end-effector, respectively; RLt ∈ R25 denotes the length of the ray that generated from the end-effector to the surface of the environment. This ray trace can reflect the real-time environment conditions. In this joint space motion planner, 25 rays are generated in different angles to the end-effector using a PyBullet library. The action of the RL agent is defined as a vector of joint angles:
+at = [θ1t, θ2t, . . . , θnt] (21)
+where θit, i ∈ 1, . . . , n, n is the DOF, denotes the joint angle, which is limited within [−1, 1]. At every time instance t, at depicts a robot’s configu
+18
+
+
+ration. The feasibility of this configuration plays a pivotal role in determining the reward. Moreover, navigating the robot towards the target region requires considering the gap between the end-effector and the intended goal as a significant reward component. The position of the end-effector can be calculated using forward kinematics F K : at → Dt. Let dt represent the distance between the end effector and the object, and let r signify the radius of the target region relative to the goal position. Consequently, the reward for the PPO agent is described as:
+Rt =
+(
+f ea(Dt) − dt, if dt ≥ r
+0.1, otherwise (22)
+6.2. Online Execution of the Joint Space Motion Planner
+It is noted that by leveraging the RL-LfD, the DRL method does not need to learn from scratch by searching the whole workspace. It only needs to learn the infeasible segments. After training, the trained policy, π∗ (weights of neural networks) with the optimal average reward is used for the online execution. For online execution, given the infeasible segment, ¬F Jij = {Di, Di+1, . . . , Dj}, of the RL-LfD trajectory, the starting and goal pose of the joint space motion planner is Di−1 and Dj+1. Using the pair {Di−1, Dj+1} as the input, the output of the joint space motion planner is a feasible trajectory trajDRL that moves the robot from Di−1 to D′
+j+1. The algorithm of offline training and online execution of the DRL method is shown in Algorithm 3.
+7. Experiments
+To validate our proposed method and to gain an in-depth understanding about the efficacy, we carry out multiple experiments, both in simulation and on a physical setup. We also discuss a case study in which the proposed method was used for conducting Non-Destructive Testing in a real-world industrial setup. The performance of the proposed hybrid robot motion planning method is evaluated using two metrics: (1) computing time to achieve a steady motion planning policy in the offline training; (2) the success rate of the motion plan in the online execution. To assess the performance of the proposed method, one purely DRL-based robot motion planning method [9] is used for comparison. Based on the results of the case study, three key
+19
+
+
+Algorithm 3 DRL Method: Offline Training and Online Execution
+1: procedure DRL Method
+2: Input: W S, robot, starting and goal positions, radius of the target area r, initial neural network weights θ 3: while the episode does not terminate do 4: Observe the state s and select the action a ∼ πθ(·|s) 5: Execute a in the environment and get the next state s′ 6: if s′ is a feasible state then 7: Calculate Rt using Eq. (22) 8: Store (s, a, r, s′, done) in replay buffer D 9: end if
+10: if it is time to update the target neural network then 11: Randomly sample a batch of transitions from D 12: Compute the loss function and update the policy 13: Update the target network’s θ 14: end if 15: end while
+16: Output: target network θ 17: end procedure
+18:
+19: procedure Online Execution of the DRL Method
+20: Input: Robot starting pose, Goal Position, Neural Network θ 21: while end-effector position is not in the target area do 22: Execute the action at ∼ πθ∗(·|st) 23: Append at to trajDRL 24: Update the current end-effector pose 25: end while 26: Output: trajDRL 27: end procedure
+20
+
+
+conclusions can be drawn: (1) the proposed hybrid robot motion planning method is effective in generating adaptive trajectories for different tasks; (2) in offline training, the proposed hybrid robot motion planning method outperforms the purely DRL-based method in training efficiency and generating feasible configurations; (3) when provided with same training time, the proposed hybrid robot motion planning method outperforms the purely DRL-based method in the success rate of achieving different tasks.
+7.1. Simulation Study
+We first validate our proposed method in a simulation environment. For the purpose of the experiments we utilize a Kinova Gen-3 7 DoF manipulator in the PyBullet simulation environment. All the models are trained using a Nvidia RTX 3090 GPU with a AMD Ryzen Threadripper processor with 32 Cores and 256 GB RAM and 2 TB SSD. The robot is tasked with completing a sequence of tasks simulating material handling in an enclosed workspace with obstacles as shown in Fig. 5a. We use a Kinova Gen-3 7-DoF manipulator with Robotiq 2f-85 end-effector to complete all the tasks. Additional to the trays and objects in the scene, the robot also has an enclosure which can further add to more collisions. Figure 5b shows the feasibility map (F R) of the workspace.
+7.1.1. Training
+The three agents, namely the RL-LfD agent, the DRL-Feasibility agent and the RL Switching agent are all trained separately. First the RL-LfD agent and the DRL-Feasibility agents are trained separately offline. Eventually, the RL-Switching agent is trained online to learn an efficient way to combine the two agents given the scenario. We utilize a Deep Q-Network (DQN) to train the RL-LfD agent. The state is defined as the sequence of poses and the actions are defined as the pair of sub-task segment and skillset as discussed in Sec. 5. Table 1 shows the model parameters of the DQN. Since we include the feasibillity in the reward function of the DRL agent we study the comparative performance in training against DRL agents which do not include the feasibility feedback [9]. We refer to our agent as the DRLFeasibility agent henceforth. The DRL-Feasibility agent is trained using the Proximal Policy Optimization (PPO). While PPO is an online learning method, we utilize a batch-training approach to emulate off-policy training characteristics and further reducing the training time. We compare the training performance of the DRL-Feasibility agent with two pure DRL techniques,
+21
+
+
+Tray 2
+Tray 1
+Objects of Interest
+Kinova 7-DoF Arm
+Workspace Enclosure
+Depth Camera
+(a) Experimental setup for simulation study task used in PyBullet.
+(b) Feasibility map of the workspace used in the simulation study.
+Figure 5: Experimental setup with feasibility map used for simulation study.
+22
+
+
+Table 1: DQN Hyperparameters (RL-LfD Agent)
+Parameter Value
+Batch Size (BATCH_SIZE) 256 Discount Factor (γ) 0.92 Start Exploration Rate (εstart) 0.95 End Exploration Rate (εend) 0.05 Exploration Decay (EPS_DECAY) 2000 Soft Update Factor (τ ) 0.005 Learning Rate (α) 1 × 10−4
+Table 2: PPO Model Parameters (DRL-Feasibility Agent)
+Parameter Value
+Learning Rate 0.0003 Discount γ 0.99 Minibatch Size 64 Num Steps 2048 Entropy Coefficient c1 0.0 VF Coefficient c2 0.5 Max Grad Norm 0.5
+a PPO based agent and a SAC based agent. For both cases is the reward is defined as the distance from the goal pose in joint space similar to [9]. Since the DRL-Feasibility extra reward for feasibility we compensate for it by providing an additional reward when goal is reached to maintain a similar scale of reward functions for all three cases. Fig. 6 shows the training curve of the three cases. Each agent is trained for 106 steps in batches of 2048 episode. The model parameters are updated in mini-batches of 64. Each epoch represents training after each batch update i.e. 2048 episodes. As it can be seen the DRL-Feasibility agent has a higher reward hence verifying our hypothesis. While the Pure DRL PPO agent does start to converge faster, the total reward plateaus rarely does it ever finish the task. For the Pure DRL SAC agent, the initial rise time in learning is the slowest, and the agent fails to reach the goal in training as the reward is always non-positive. Table 2 shows the parameters of the three models respectively. Figure 7 shows the training curve for the RL Switching agent. The Switching agent is trained using a discrete PPO algorithm. Discretized PPO is cho
+23
+
+
+Figure 6: Plot shows comparison between Total Reward v/s Steps for the Proposed Feasibility DRL and Simple DRL method.
+sen to train this due due to it’s ability to handle discrete state-action space in addition to the stability and speed in learning. Table 3 shows the model parameters used. The model was trained for 10000 epochs in a batch update format which each epoch being 200 episodes long. The model parameters are updated in a mini-batch size of 32 steps.
+7.1.2. Execution
+We validate the trained model in execution for the task of placing objects from a enclosed workspace to it’s respective trays. Figure 5a shows the setup of the scenario developed in PyBullet [24]. In this scenario multiple objects are placed in front of the robot in an enclosed workspace. The robot must pick up each object and place it in the desired tray. The tools (hammer and bolts) go to the Tray 1 and other objects (blocks) go to Tray 2. The trays are of distinct size and are placed such that the robot will have to avoid collision multiple times. As discussed in Sec. 5 we define the task as a sequence of poses in SE(3). In this scenario, each sub-task is defined as the initial pose of the object and the final pose of the object. It must be noticed that picking up each object requires a particular set of skill, due to characteristics such as surface friction, center of mass, etc. As
+24
+
+
+Figure 7: Training curve for the RL Switching Agent.
+Table 3: Discrete PPO Model Parameters (RL-Switching Agent)
+Parameter Value
+Learning Rate 0.001 Discount γ 0.96 Minibatch Size 32 Num Steps 200 Entropy Coefficient c1 0.0 VF Coefficient c2 0.5 Max Grad Norm 0.5
+25
+
+
+Collision
+Figure 8: Execution of pick and place task. Comparison between the Hybrid Learning approach (left) and the RL-LfD approach (right).
+discussed in Sec. 5, we leverage demonstrations for such dexterous sub-tasks. However, the DRL planner does not have access to these skill sets. To validate our method’s efficacy we compared the proposed Hybrid Learning method against DRL Planner (PPO) and just the RL-LfD method. We repeat the experiments 100 times and evaluated the success rate if all the items were placed at the desired location without causing any collisions. The proposed hybrid learning method has a success rate of 82%, whereas the RL-LfD planner had a success rate of 0% success rate and the DRL planner has 23% success rate. The proposed method almost always succeeds to execute the motion plan without any collisions and while maintaining feasibility, however, during the switching between trajLfD and trajDRL caused the objects to drop out from the gripper or cause collisions. While the LfD has a very poor success rate when considering the complete task, it has slightly higher success rate when considering partial task, i.e. for certain sub-tasks (placing the blocks in Tray 2) generated collision free feasible trajectories but while placing the tools in Tray 1, following trajLfD always leads to collision. Lastly, the DRL planner was able to successfully complete the task on certain occasions it was mostly limited by the inability to maintain any gripping actions and would often lead to collisions hence highlighting the need for human demonstrations.
+26
+
+
+7.2. Industrial Case Study
+This section presents simulated experiments conducted on a fluorescent penetrant inspection (FPI) task, which is the most widely used Non-Destructive Testing (NDT) method in the aerospace industry [25]. The experimental setup for the FPI task is depicted in Fig. 5(a). The task to be performed is shown in Fig. 5(c), where the Fanuc LR Mate 200iD robot is required to move from the initial home configuration, con1, to the hovering position, con2, above the center of the tray, and then brush one blade from con3 (an initial configuration on a blade) to con4 (an ending configuration on a blade). A set of 20 fundamental skills commonly employed in FPI tasks are provided. Fig. 5(b) illustrates three examples of the demonstrated skills, including rotating, twisting, and translating on a Kinova Gen3 robot.
+7.2.1. Offline Training of the Hybrid Motion Planning Method
+All offline training is executed on an 8-core workstation processor paired with an Nvidia GPU. For effective offline training, 100 FPI tasks are generated with randomly chosen starting and goal positions in the work cell. This diverse task set allows us to evaluate the system’s performance across various scenarios. First, Algorithm 2 is employed to train the task space RL-LfD motion planner. After training, the feasibility analysis is conducted to identify infeasible segments. These segments’ starting and ending configurations are then utilized as input data to train the joint space DRL-Feasibility motion planner using Algorithm 3. For comparison, a purely DRL-based method is trained within the entire workspace by following the same task constraints. During the offline training phase, the radius of the target region is set to a tolerance of 25 centimeters. Under these settings, the DRL-Feasibility-based method can learn a steady policy within an acceptable time frame. As shown in the left plot of Fig. 10, after around 100 episodes, the RL-LfD motion planner can obtain a steady policy that optimizes the average accumulated reward. This high training efficiency is achieved as the proposed RL-LfD method learns the kinematic features, which remain consistent across similar tasks despite variations in positions and orientations. In the right plot of Fig. 10, the learning curve of DRL-Feasibility in the hybrid approach reaches a stable policy after around 1250 episodes. In contrast, the purely DRL method struggles to converge. Furthermore, the average accumulated reward obtained using the purely DRL approach is notably lower compared to the hybrid method. This discrepancy can be attributed to the
+27
+
+
+(a)
+(b)
+(c)
+Figure 9: Fanuc LR Mate 200iD test bed and kinesthetic demonstrations. (a) Components in the FPI work cell. The simulated work cell (right) is set up in Pybullet, which is the digital twin of the real robotic work cell (left). (b) FPI tasks to be performed. (c) Kinesthetic demonstrations on a Kinova Gen3 robot.
+28
+
+
+Figure 10: Offline training of the RL-LfD method (left) and the offline training of the DRL method (right).
+inherent difficulty of the purely DRL method in searching for feasible configurations, ultimately leading to reduced rewards. The delayed progress in training of the purely DRL method stems from its learning from scratch, where it searches the feasible motion planning policy within the whole space to comprehend position and orientation task constraints. The hybrid approach, however, leverages the strengths of both task space RL-LfD and joint space DRL. The trained RL-LfD policy plans the trajectory based on the task-level understanding and the demonstrated features of skills, which does not need to be retrained when tasks change. In addition, the knowledge of the infeasible segments transferred from the RL-LfD method, and the feasibility map significantly reduces the searching space of the DRL-Feasibility based method and avoid learning from scratch, resulting in the high efficiency and adaptivity in the offline training.
+7.2.2. Online Execution of the Hybrid Motion Planning Method
+Trained policies from both the proposed hybrid method and the purely DRL-based method are employed to execute ten distinct painting tasks on ten blades. For each task, a total of 100 execution trials are conducted. A trial is deemed successful when the robot can reach all essential configurations, covering both position and orientation. This includes reaching the container, as well as the initial and ending configurations on each blade, all within a 5-centimeter tolerance for positions and a 5-degree tolerance for each Euler angle in the critical orientation. Fig. 11 illustrates the success rates of both approaches, highlighting the significant superiority of the hybrid method
+29
+
+
+Figure 11: Online execution of the proposed hybrid motion planning method and the purely DRL method.
+in successfully completing all tasks compared to the purely DRL approach. This contrast arises from the fact that DRL-Feasibility-based training relies on a less stringent tolerance for achieving a target configuration to establish a relatively stable policy. Conversely, the hybrid method capitalizes on RL-LfD to improve accuracy within the task space. In conclusion, the proposed hybrid motion planning method demonstrates both effectiveness and efficiency in generating feasible trajectories that satisfy task requirements, thereby providing significant benefits over methods solely based on DRL.
+8. Conclusion & Future Work
+This paper presents a multi-level hybrid robot motion planning method that integrates the strengths of task-space RL-LfD and joint-space DRLbased motion planning while minimizing their inherent limitations through an efficient switching mechanism. By training the DRL-based method using identified infeasible segments of the RL-LfD trajectory, the proposed approach significantly improves training efficiency and ensures the generation
+30
+
+
+of a feasible motion planning policy. The RL-based switching mechanism further reduces the need for extensive heuristic tuning, enabling seamless execution. The proposed method was validated in both simulation and real-world industrial environment. The validation results demonstrate that the hybrid learning framework leads to substantial improvements in both training time and execution accuracy. These findings suggest that, given a sufficient skill set and by training a DRL agent to emphasize feasibility, human demonstrations and deep learning techniques can be effectively integrating to enhance adaptability in autonomous robotic operations within condensed workspaces. Future work will focus on improving the scalability and adaptability of the hybrid motion planning method by incorporating robot dynamics. Additionally, we aim to explore online learning strategies to enable multiple robots to adapt to dynamic work environments in real time.
+9. Acknowledgment
+We would like to acknowledge the support of ARM Institute, General Motors and GE Research, for the work carried out in this manuscript. This work is supported by the National Science Foundation Grant CMMI 2243930.
+References
+[1] Y. Lu, H. Zheng, S. Chand, W. Xia, Z. Liu, X. Xu, L. Wang, Z. Qin, J. Bao, Outlook on human-centric manufacturing towards industry 5.0, Journal of Manufacturing Systems 62 (2022) 612–627. doi:https:// doi.org/10.1016/j.jmsy.2022.02.001.
+[2] R. Laha, A. Rao, L. F. C. Figueredo, Q. Chang, S. Haddadin, N. Chakraborty, Point-to-point path planning based on user guidance and screw linear interpolation, in: Proc. ASME Des. Eng. Tech. Conf., vol. 8B-2021, Nov, 2021. doi:10.1115/DETC2021-71814.
+[3] J. Zhang, H. Liu, Q. Chang, L. Wang, R. X. Gao, Recurrent neural network for motion trajectory prediction in human-robot collaborative assembly, CIRP Ann. 69 (1) (2020) 9–12. doi:10.1016/j.cirp.2020. 04.077.
+31
+
+
+[4] J. Yamada, et al., Motion planner augmented reinforcement learning for robot manipulation in obstructed environments, no. CoRL (2020) 1–15. URL http://arxiv.org/abs/2010.11940
+[5] X. Yang, Z. Ji, J. Wu, Y.-K. Lai, An open-source multi-goal reinforcement learning environment for robotic manipulation with pybullet, in: Annual Conference Towards Autonomous Robotic Systems, Springer, 2021, pp. 14–24.
+[6] O. Kilinc, G. Montana, Reinforcement learning for robotic manipulation using simulated locomotion demonstrations, Machine Learning (2022) 1–22.
+[7] J. A. Abdor-Sierra, E. A. Merchán-Cruz, R. G. Rodríguez-Cañizo, A comparative analysis of metaheuristic algorithms for solving the inverse kinematics of robot manipulators, Results Eng. 16, no (August 2022). doi:10.1016/j.rineng.2022.100597.
+[8] D. Han, B. Mulyana, V. Stankovic, S. Cheng, A survey on deep reinforcement learning algorithms for robotic manipulation, Sensors 23 (7) (2023) 1–35. doi:10.3390/s23073762.
+[9] J. N. Karigiannis, et al., Reinforcement learning enabled self-homing of industrial robotic manipulators in manufacturing, Manuf. Lett. 33 (2022) 909–918. doi:10.1016/j.mfglet.2022.07.111.
+[10] L. Lu, M. Zhang, D. He, Q. Gu, D. Gong, L. Fu, A method of robot grasping based on reinforcement learning, J. Phys. Conf. Ser. 2216 (1) (2022). doi:10.1088/1742-6596/2216/1/012026.
+[11] X. Zhang, S. Jin, C. Wang, X. Zhu, M. Tomizuka, Learning insertion primitives with discrete-continuous hybrid action space for robotic assembly tasks, in: Proc. - IEEE Int. Conf. Robot. Autom., vol. 1, 2022, pp. 9881–9887. doi:10.1109/ICRA46639.2022.9811973.
+[12] N. Vulin, S. Christen, S. Stevšić, O. Hilliges, Improved learning of robot manipulation tasks via tactile intrinsic motivation, IEEE Robotics and Automation Letters 6 (2) (2021) 2194–2201. doi:10.1109/LRA.2021. 3061308.
+32
+
+
+[13] A. Franceschetti, E. Tosello, N. Castaman, S. Ghidoni, Robotic arm control and task training through deep reinforcement learning, in: International Conference on Intelligent Autonomous Systems, Springer, 2021, pp. 532–550.
+[14] T. Z. Zhao, et al., Offline meta-reinforcement learning for industrial insertion, in: Proc. - IEEE Int. Conf. Robot. Autom, 2022, pp. 63866393. doi:10.1109/ICRA46639.2022.9812312.
+[15] D. Mukherjee, K. Gupta, L. H. Chang, H. Najjaran, A survey of robot learning strategies for human-robot collaboration in industrial settings, Robot. Comput. Integr. Manuf. 73 (2022) 102231.
+[16] T. Yu, Q. Chang, User-guided motion planning with reinforcement learning for human-robot collaboration in smart manufacturing, Expert Syst. Appl. (2022) 118291.
+[17] H. Ravichandar, A. S. Polydoros, S. Chernova, A. Billard, Recent advances in robot learning from demonstration, Annu. Rev. Control. Robot. Auton. Syst. 3 (2020) 297–330.
+[18] A. Bauer, D. Wollherr, M. Buss, Human–robot collaboration: a survey, International Journal of Humanoid Robotics 5 (01) (2008) 47–66.
+[19] T. Yoshikawa, Manipulability of robotic mechanisms, Int. J. Rob. Res. 4 (2) (1985) 3–9.
+[20] A. Makhal, A. K. Goins, Reuleaux: Robot base placement by reachability analysis, in: Proc. - 2nd IEEE Int. Conf. Robot. Comput. IRC 2018, vol. 2018-Janua, 2018, pp. 137–142. doi:10.1109/IRC.2018.00028.
+[21] D. Torielli, L. Muratore, N. Tsagarakis, Manipulability-aware shared locomanipulation motion generation for teleoperation of mobile manipulators, IEEE Int. Conf. Intell. Robot. Syst. 2022 (2022) 6205–6212, ob. doi:10.1109/IROS47612.2022.9982220.
+[22] M. Zhou, X. Zhang, Fast collision checking for dual-arm collaborative robots working in close proximity, in: Proc. - IEEE Int. Conf. Robot. Autom, 2022, pp. 243–249. doi:10.1109/ICRA46639.2022.9811857.
+33
+
+
+[23] J. M. Selig, Geometric fundamentals of robotics, Springer Science & Business Media, 2007.
+[24] E. Coumans, Y. Bai, Pybullet, a python module for physics simulation for games, robotics and machine learning (2016).
+[25] J. Karigiannis, et al., Multi-robot system for automated fluorescent penetrant indication inspection with deep neural nets, Procedia Manuf. 53 (2021) 735–740. doi:10.1016/j.promfg.2021.06.072.
+34

@@ -1,0 +1,166 @@
+HomeMachine LearningBiosignal ProcessingBiosignalsMedicinePhysiologyReinforcement Learning
+ArticlePDF Available
+Pick and Place Objects in a Cluttered Scene Using Deep Reinforcement Learning
+September 2020International Journal of Mechanical & Mechatronics Engineering 20(4):50-57
+Authors:
+Marwan Mohammed
+Abertay University
+L.C. Kwek
+Multimedia University
+Shing Chyi Chua
+Multimedia University
+Citations (27)
+References (49)
+Figures (1)
+Abstract and Figures
+This paper presents a robotic grasp-to-place system that has the capability of grasping objects in sparse and cluttered environments. The key feature of the system is that it handles both primitive actions of picking and placing of objects with an explicit framework using raw RGB-D images. Thus, the contribution of this paper is to model such a complete manipulation system with reasonable computational complexity. To achieve this, the camera captured RGB images of the scene, and 3d point cloud information are used to generate heightmaps at the robot grasp-workspace. The heightmap is rotated by 36 different angles before feeding into the network in order to generate a set of 36 pixel-wise Q-value maps, which is then passed into a Dense Network (DenseNet) to generate predictions of Q-values. Q-values are a measure of future expected reward in the formula of Q-learning from reinforcement learning. This effectively gives us values for predictions for 36 different grasping angles for every visible location in the robot grasp-workspace. In the simulation, exhaustive experimental results demonstrate that our framework successfully grasp objects with a grasp success rate and grasp efficiency, at almost 80~95% for both. As for place task, our framework successfully placed objects with a place success rate to at least 90 % through all test-cases. Index Term-Robotic grasp-to-place system, pixel-wise Q-value, Deep Reinforcement Learning (DRL), Q-learning, DenseNet.
+Framework of Picking and Placing Objects
+… 
+Figures - uploaded by Marwan MohammedAuthor content
+Content may be subject to copyright.
+
+Discover the world's research
+
+25+ million members
+160+ million publication pages
+2.3+ billion citations
+Join for free
+Public Full-text 1
+Content uploaded by Marwan Mohammed
+Author content
+Content may be subject to copyright.
+Citations (27)
+References (49)
+... Mohammed M.Q. et al. [14] propose a pick-and-place robotic manipulator system within a simulated scenario, designed to effectively grasp target objects in cluttered environments. The system utilizes RGB-D images and point cloud data to generate 36 distinct angles of heightmaps as inputs to the proposed grasping policy network which consists of DenseNet-121 with FCN. ...
+... Robotics 2025,14, 113 ...
+Autonomous Grasping of Deformable Objects with Deep Reinforcement Learning: A Study on Spaghetti Manipulation
+Article
+Full-text available
+Aug 2025
+Gamolped PremNattapat Koomklang
+Abbe MowshowitzEiji Hayashi
+View
+Show abstract
+... In [17], a robotic grasp-to-place method that can grasp objects in a sparse and cluttered scene was presented. The main characteristics of this study is that it can handle both primitive actions of picking and placing using raw RGB-D images and an explicit framework. ...
+Deep Reinforcement Learning Based Synergies Pushing and Grasping Policies in Cluttered Scene Using UR5 Robot
+Article
+Full-text available
+Jun 2025
+Birhanemeskel Alamir ShiferawRamasamy SrinivasanTayachew Fikire
+View
+Show abstract
+... In these situations, using robots significantly lowers the number of workplace accidents [18][19][20]. A robot can operate flawlessly for twenty-four hours a day, seven days a week, and in a short amount of time by itself with numerous humans, but it also works nonstop all year round [22]. ...
+A Condensed Overview of Robotics with Artificial Intelligence
+Chapter
+Full-text available
+May 2025
+Abhinav Ravindra Giri
+Amit Kumar MarwahShashi Chandra Sharma
+View
+... Mahler et al. used CNN and DQN for pick-and-transport tasks with an ABB Yumi robot [12]. Mohammed et al. utilized DQN and Q-learning with RGBD input for target position generation on UR robots [17]. ...
+Reinforcement learning for robot manipulation tasks in human-robot collaboration using the CQL/SAC algorithms
+Article
+Full-text available
+Apr 2025
+Anel Husaković
+Lejla Banjanovic-MehmedovicA. Gurdić-RibicIsak Karabegović
+View
+Show abstract
+... [10] proposed a joint learning methodology using semantic occlusion segmentation to enhance the reasoning instance process of a pick-and-place task. Mohammed et al. [11] presented a raw RGB-D image-based framework generating a robot picking workspace while maintaining reasonable computational complexity. Zeng et al. [12] proposed an object-agnostic grasping system that processed observed images for different grasping actions. ...
+Federated Learning-Based Framework to Improve the Operational Efficiency of an Articulated Robot Manufacturing Environment
+Article
+Full-text available
+Apr 2025
+Junyong SoIn-Bae LeeSojung Kim
+View
+Show abstract
+... Methods based on geometric analysis can be found in [19,21,57]. Additionally, distinct algorithms utilizing reinforcement learning can be identified [44,46,60]. However, this necessitates the creation of complex environments, and training is time-consuming. ...
+Estimation of grasp type and determining grasping points for Adaptive Grasping Device
+Article
+Mar 2025
+Michał CzubenkoPiotr LyczkoRafał Okuński
+View
+Show abstract
+... et al. introduce a robotic grasp-to-place system designed to grasp objects in environments characterized by sparsity and clutter. A notable aspect of the system is its ability to execute both fundamental actions of object picking and placing within an explicit framework, leveraging raw RGB-D images [2]. Rubagotti, M. et al. introduces a teleoperation approach known as semiautonomous teleoperation or shared control, and its aim is to reduce the workload of the human operator during the performance of a difficult task that involves controlling a robotic system [3]. ...
+Deep Reinforcement Learning-Assisted Teaching Strategy for Industrial Robot Manipulator
+Article
+Full-text available
+Nov 2024
+Janos SimonLászló Gogolák
+József Sárosi
+View
+Show abstract
+... Vision systems improve positional accuracy, with a centroid detection algorithm in [25] used for precise target positioning. Visual-aided control systems also perform well in cluttered environments, shown by [26], where a pick and place model successfully grasps objects in both sparse and cluttered settings. ...
+Computer Vision-Enabled Autonomous Advanced Control for Serial-Link Robotic Manipulators
+Conference Paper
+Oct 2024
+Ammar MazharMohammad Zayan Tariq KhanMuhammad Izhan
+Ahsan Tanveer
+View
+A Review of Next-Generation Sensor Technologies for Human-Machine Interaction
+Article
+Full-text available
+Dec 2025IEEE SENS J
+Xiangyu Guo
+Tai FeiZican WangZhi Jin
+View
+Show abstract
+Robotic disassembly of electric vehicle batteries: Technologies and opportunities
+Article
+Nov 2024COMPUT IND ENG
+Yue Zang
+Mo Qu
+D. T. Pham
+Yongjing Wang
+View
+Show more
+Recommended publications
+Discover more about: Reinforcement Learning
+Chapter
+Robotic Pushing and Grasping Knowledge Learning via Attention Deep Q-learning Network
+August 2020 · Lecture Notes in Computer Science
+Zipeng YangHuiliang Shang
+Robotic grasping is a fundamental manipulation in multiple robotic tasks, which has great research significance. It is challenging to perform robotic grasping in cluttered environments due to the occlusion and stacking of objects. We propose an attention deep Q-learning network for robotic grasping with the assistance of pushing actions with non-sparse rewards. The attention network improves the ... [Show full abstract]
+Read more
+Conference Paper
+Prehensile Robotic pick-and-place in clutter with Deep Reinforcement Learning
+July 2022
+Muhammad Babar Imtiaz
+Yuansong Qiao
+Brian Lee
+Read more
+Conference Paper
+Color Matching Based Approach for Robotic Grasping
+July 2021
+Marwan Mohammed
+L.C. Kwek
+Shing Chyi ChuaEsmail Ai Alandoli
+Object grasping is a basic but difficult task in robotic manipulation due to various object size, shapes and other properties. The problem becomes more challenging when the robot has to reach for and grasp a particular object in cluttered environments. To this end, the color of object can be one of the important features for identifying the target object to be picked up. In this paper, we ... [Show full abstract]
+Read more
+Article
+Full-text available
+Hyper‐Versatile Gripping: Synergizing Mechanical and Machine Intelligence of a Hybrid Robotic Grippe...
+February 2024 · Advanced Intelligent Systems
+Phone May Khin
+Raye Chen-Hua YeowMarcelo H. Ang
+Integration of robotic solutions in manufacturing sector is growing. However, it is still concentrated in certain industries (i.e., electronics and automotive) where standardization of product physical form is high. Current state‐of‐the‐art gripping solutions fall short when they need to accommodate items with high variability in physical form. This challenging scenario for automation can be ... [Show full abstract]
+View full-text
+Conference Paper
+Combining Reinforcement Learning and Rule-based Method to Manipulate Objects in Clutter
+July 2020
+Yiwen Chen
+Zhaojie JuChenguang Yang
+Read more
+Join for free
+Login
+Company
+About us
+News
+Careers
+Support
+Help Center
+Business solutions
+Advertising
+Recruiting
+© 2008-2026 ResearchGate GmbH. All rights reserved.
+TermsPrivacyCopyrightImprintConsent preferences

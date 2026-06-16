@@ -1,0 +1,126 @@
+=== START 2026-05-11T15:06:49+02:00 ===
+PWD: /Users/christelle.nollet/Desktop/ROBOT
+CMD: lerobot-record ... eval_ACT2_v3
+objc[60563]: Class AVFFrameReceiver is implemented in both /Users/christelle.nollet/miniconda3/envs/lerobot-vla/lib/python3.11/site-packages/cv2/.dylibs/libavdevice.61.3.100.dylib (0x104b243a8) and /Users/christelle.nollet/miniconda3/envs/lerobot-vla/lib/python3.11/site-packages/av/.dylibs/libavdevice.61.3.100.dylib (0x14a0103a8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[60563]: Class AVFAudioReceiver is implemented in both /Users/christelle.nollet/miniconda3/envs/lerobot-vla/lib/python3.11/site-packages/cv2/.dylibs/libavdevice.61.3.100.dylib (0x104b243f8) and /Users/christelle.nollet/miniconda3/envs/lerobot-vla/lib/python3.11/site-packages/av/.dylibs/libavdevice.61.3.100.dylib (0x14a0103f8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+INFO 2026-05-11 15:07:02 t_record.py:431 {'dataset': {'encoder_queue_maxsize': 30,
+             'encoder_threads': None,
+             'episode_time_s': 30,
+             'fps': 30,
+             'num_episodes': 5,
+             'num_image_writer_processes': 0,
+             'num_image_writer_threads_per_camera': 4,
+             'private': False,
+             'push_to_hub': False,
+             'rename_map': {},
+             'repo_id': 'Christelle04/eval_ACT2_v3',
+             'reset_time_s': 10,
+             'root': None,
+             'single_task': 'Pick and place evaluation',
+             'streaming_encoding': False,
+             'tags': None,
+             'vcodec': 'libsvtav1',
+             'video': True,
+             'video_encoding_batch_size': 1},
+ 'display_compressed_images': False,
+ 'display_data': False,
+ 'display_ip': None,
+ 'display_port': None,
+ 'play_sounds': True,
+ 'policy': {'chunk_size': 100,
+            'device': 'mps',
+            'dim_feedforward': 3200,
+            'dim_model': 512,
+            'dropout': 0.1,
+            'feedforward_activation': 'relu',
+            'input_features': {'observation.images.camera1': {'shape': (3,
+                                                                        480,
+                                                                        640),
+                                                              'type': <FeatureType.VISUAL: 'VISUAL'>},
+                               'observation.images.camera2': {'shape': (3,
+                                                                        480,
+                                                                        640),
+                                                              'type': <FeatureType.VISUAL: 'VISUAL'>},
+                               'observation.state': {'shape': (6,),
+                                                     'type': <FeatureType.STATE: 'STATE'>}},
+            'kl_weight': 10.0,
+            'latent_dim': 32,
+            'license': None,
+            'n_action_steps': 100,
+            'n_decoder_layers': 1,
+            'n_encoder_layers': 4,
+            'n_heads': 8,
+            'n_obs_steps': 1,
+            'n_vae_encoder_layers': 4,
+            'normalization_mapping': {'ACTION': <NormalizationMode.MEAN_STD: 'MEAN_STD'>,
+                                      'STATE': <NormalizationMode.MEAN_STD: 'MEAN_STD'>,
+                                      'VISUAL': <NormalizationMode.MEAN_STD: 'MEAN_STD'>},
+            'optimizer_lr': 1e-05,
+            'optimizer_lr_backbone': 1e-05,
+            'optimizer_weight_decay': 0.0001,
+            'output_features': {'action': {'shape': (6,),
+                                           'type': <FeatureType.ACTION: 'ACTION'>}},
+            'pre_norm': False,
+            'pretrained_backbone_weights': 'ResNet18_Weights.IMAGENET1K_V1',
+            'pretrained_path': 'Christelle04/ACT2',
+            'private': None,
+            'push_to_hub': False,
+            'replace_final_stride_with_dilation': 0,
+            'repo_id': None,
+            'tags': None,
+            'temporal_ensemble_coeff': None,
+            'use_amp': False,
+            'use_peft': False,
+            'use_vae': True,
+            'vision_backbone': 'resnet18'},
+ 'resume': False,
+ 'robot': {'calibration_dir': None,
+           'cameras': {'camera1': {'backend': <Cv2Backends.ANY: 0>,
+                                   'color_mode': <ColorMode.RGB: 'rgb'>,
+                                   'fourcc': None,
+                                   'fps': 30,
+                                   'height': 480,
+                                   'index_or_path': 0,
+                                   'rotation': <Cv2Rotation.NO_ROTATION: 0>,
+                                   'warmup_s': 1,
+                                   'width': 640},
+                       'camera2': {'backend': <Cv2Backends.ANY: 0>,
+                                   'color_mode': <ColorMode.RGB: 'rgb'>,
+                                   'fourcc': None,
+                                   'fps': 30,
+                                   'height': 480,
+                                   'index_or_path': 1,
+                                   'rotation': <Cv2Rotation.NO_ROTATION: 0>,
+                                   'warmup_s': 1,
+                                   'width': 640}},
+           'disable_torque_on_disconnect': True,
+           'id': 'my_awesome_follower_arm',
+           'max_relative_target': None,
+           'port': '/dev/tty.usbmodem59700734041',
+           'use_degrees': True},
+ 'teleop': None}
+INFO 2026-05-11 15:07:02 eo_utils.py:106 Using video codec: libsvtav1
+INFO 2026-05-11 15:07:02 ls/utils.py:227 Stop recording
+INFO 2026-05-11 15:07:04 ls/utils.py:227 Exiting
+Traceback (most recent call last):
+  File "/Users/christelle.nollet/miniconda3/envs/lerobot-vla/bin/lerobot-record", line 6, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/scripts/lerobot_record.py", line 604, in main
+    record()
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/configs/parser.py", line 233, in wrapper_inner
+    response = fn(cfg, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/scripts/lerobot_record.py", line 484, in record
+    dataset = LeRobotDataset.create(
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/datasets/lerobot_dataset.py", line 1664, in create
+    obj.meta = LeRobotDatasetMetadata.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/datasets/lerobot_dataset.py", line 518, in create
+    obj.root.mkdir(parents=True, exist_ok=False)
+  File "/Users/christelle.nollet/miniconda3/envs/lerobot-vla/lib/python3.11/pathlib.py", line 1116, in mkdir
+    os.mkdir(self, mode)
+FileExistsError: [Errno 17] File exists: '/Users/christelle.nollet/.cache/huggingface/lerobot/Christelle04/eval_ACT2_v3'
+lerobot-record --robot.type=so100_follower  --robot.id=my_awesome_follower_ar  8.18s user 1.48s system 61% cpu 15.593 total
+=== END 2026-05-11T15:07:04+02:00 | exit_code=1 ===

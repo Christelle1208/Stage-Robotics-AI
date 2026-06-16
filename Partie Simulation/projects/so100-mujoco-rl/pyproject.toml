@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=67", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "so100-mujoco-rl"
+version = "0.1.0"
+description = "MuJoCo RL workspace for SO-100 robot arm with Stable-Baselines3"
+requires-python = ">=3.10"
+dependencies = [
+    "mujoco>=3.1.0",
+    "gymnasium>=0.29.0",
+    "stable-baselines3>=2.3.0",
+    "numpy>=1.24.0",
+    "pyyaml>=6.0",
+    "torch>=2.0.0",
+    "tensorboard>=2.14.0",
+    "imageio>=2.31.0",
+    "imageio-ffmpeg>=0.4.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+    "black>=23.0.0",
+]
+lerobot = [
+    "lerobot @ git+https://github.com/huggingface/lerobot.git",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]

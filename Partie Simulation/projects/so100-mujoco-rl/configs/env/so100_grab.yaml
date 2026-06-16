@@ -1,0 +1,44 @@
+# SO-100 "grab cube" task — environment config
+#
+# Scene: assets/robots/so100/so100_feuille_scene.xml
+#   Feuille (sheet): 0.24 x 0.16 m, centered at world (0, 0), top z = 0.002
+#   Robot base: (0.06, -0.265), facing +y (toward the Feuille)
+#
+# The cube (3 cm edge) is added programmatically by SO100GrabEnv._patch_spec
+# and spawns at a random position on the Feuille checkerboard each episode.
+#
+# Success: end-effector within `success_threshold` of the cube, gripper OPEN
+# (close_fraction < gripper_open_threshold), held for `hold_steps` consecutive
+# steps. This confirms the arm is correctly positioned and ready to close on
+# the cube — closing the gripper is a later phase and is not rewarded here
+# (see tasks/grab.py for the Jaw open/closed convention).
+
+env_id: SO100Grab-v0
+scene_xml: assets/robots/so100/so100_feuille_scene.xml
+max_episode_steps: 150
+render_mode: human  # used by scripts only; gym.make(..., render_mode=None) overrides
+
+control:
+  action_scale: 0.05       # radians per step (position delta)
+  control_mode: joint_delta_position
+
+task:
+  object_name: cube
+  end_effector_site: ee_site
+  gripper_joint: Jaw
+  success_threshold: 0.005       # metres (ee-to-cube) — "within 5 mm"
+  gripper_open_threshold: 0.5    # close_fraction must stay below this (0=open, 1=closed)
+  hold_steps: 15                 # consecutive steps in-position+open required for success
+  cube_spawn_z: 0.017             # Feuille top (0.002) + cube half-extent (0.015)
+
+randomization:
+  # Cube spawns within the Feuille (0.24 x 0.16 m, centered at origin),
+  # with margin so the 3 cm cube stays fully on the sheet.
+  cube_range:
+    x: [-0.10, 0.10]
+    y: [-0.065, 0.065]
+
+reward:
+  reach_weight: 1.0
+  success_bonus: 10.0
+  action_penalty: 0.01

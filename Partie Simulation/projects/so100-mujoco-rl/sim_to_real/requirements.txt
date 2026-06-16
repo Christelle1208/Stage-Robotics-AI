@@ -1,0 +1,5 @@
+# Extra dependencies for the sim-to-real pipeline.
+# (mujoco, numpy, gymnasium, stable-baselines3 are already required by the
+# main project — see the project root's requirements/pyproject.)
+
+opencv-contrib-python>=4.7   # cv2.aruco lives in the "contrib" build

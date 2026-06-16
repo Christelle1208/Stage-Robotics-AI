@@ -1,0 +1,197 @@
+<!--
+  SO-100 Real-Life Pick-and-Place Scene
+  ======================================
+  Reproduces a physical workbench setup:
+    - SO-100 arm clamped to the near edge of a large (80×60 cm) table
+    - 5 cm cube as the pick object
+    - 10×10×5 cm open bin as the drop target
+
+  Coordinate origin: robot base = table surface level.
+  The table extends in the -y direction (in front of the robot).
+  Workspace (approx): x ∈ [-0.20, 0.20], y ∈ [-0.40, -0.05], z ∈ [0, 0.25]
+
+  The ee_site and goal_site are injected by the Python env via MjSpec.
+  Loaded via build_model() (MjSpec) — meshes resolve from the Menagerie.
+
+  Body/site names:
+    cube         → task.object_name       (configs/env/so100_real_pick_place.yaml)
+    goal_site    → task.target_site
+    ee_site      → task.end_effector_site (injected into Fixed_Jaw by env)
+-->
+<mujoco model="so100_real_pick_place">
+
+  <include file="../../assets/mujoco_menagerie/trs_so_arm100/so_arm100.xml"/>
+
+  <!-- 250 Hz physics, 5 substeps → 50 Hz policy -->
+  <option timestep="0.004" gravity="0 0 -9.81"/>
+
+  <statistic center="0.05 -0.25 0.10" extent="0.65"/>
+
+  <visual>
+    <headlight diffuse="0.7 0.7 0.7" ambient="0.4 0.4 0.4" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="140" elevation="-22"/>
+  </visual>
+
+  <asset>
+    <!-- Sky -->
+    <texture type="skybox" builtin="gradient"
+             rgb1="0.55 0.65 0.75" rgb2="0.10 0.10 0.15"
+             width="512" height="3072"/>
+
+    <!-- Table wood surface -->
+    <texture name="wood" type="2d" builtin="flat"
+             rgb1="0.72 0.56 0.34" width="256" height="256"/>
+    <material name="wood" texture="wood" texrepeat="4 4" reflectance="0.05"/>
+
+    <!-- Table legs / metal -->
+    <material name="metal" rgba="0.55 0.55 0.60 1" reflectance="0.3"/>
+
+    <!-- Floor -->
+    <texture name="floor_tex" type="2d" builtin="checker" mark="edge"
+             rgb1="0.30 0.30 0.30" rgb2="0.22 0.22 0.22"
+             markrgb="0.50 0.50 0.50" width="300" height="300"/>
+    <material name="floor" texture="floor_tex" texuniform="true"
+              texrepeat="8 8" reflectance="0.1"/>
+
+    <!-- Objects -->
+    <material name="cube_mat" rgba="0.88 0.30 0.12 1"/>
+    <material name="bin_mat"  rgba="0.25 0.45 0.80 1" reflectance="0.05"/>
+    <material name="goal_mat" rgba="0.15 0.85 0.35 0.65"/>
+  </asset>
+
+  <worldbody>
+    <!-- Overhead light (like a workshop lamp) -->
+    <light pos="0.0 -0.30 1.20" dir="0 0.15 -1" directional="false"
+           diffuse="0.7 0.7 0.65" specular="0.1 0.1 0.1" castshadow="true"/>
+    <!-- Fill light from the side -->
+    <light pos="0.60 0.10 0.80" dir="-0.5 -0.3 -0.7" directional="true"
+           diffuse="0.3 0.3 0.35" specular="0 0 0"/>
+
+    <!--
+      Real floor — 75 cm below the table surface (z = -0.75).
+      Only visible; the physics surface is the table top itself.
+    -->
+    <geom name="floor" type="plane" size="0 0 0.05"
+          pos="0 0 -0.75" material="floor" contype="0" conaffinity="0"/>
+
+    <!--
+      ============================================================
+      TABLE
+      Origin: robot base coincides with the table surface (z = 0).
+      The table extends 60 cm in front of the robot (y: 0 → -0.60)
+      and 80 cm wide (x: -0.40 → +0.40).
+      The top slab is 20 mm thick (z: -0.02 → 0.00).
+      ============================================================
+    -->
+    <body name="table" pos="0.0 -0.30 -0.01">
+      <!-- Table top — physics surface + visual -->
+      <geom name="table_top"
+            type="box" size="0.40 0.30 0.010"
+            material="wood"
+            contype="1" conaffinity="1" mass="15"/>
+      <!-- 4 steel legs -->
+      <geom name="leg_fl" type="cylinder" size="0.015 0.370"
+            pos="-0.37  0.27 -0.380" material="metal" mass="0.8"
+            contype="0" conaffinity="0"/>
+      <geom name="leg_fr" type="cylinder" size="0.015 0.370"
+            pos=" 0.37  0.27 -0.380" material="metal" mass="0.8"
+            contype="0" conaffinity="0"/>
+      <geom name="leg_bl" type="cylinder" size="0.015 0.370"
+            pos="-0.37 -0.27 -0.380" material="metal" mass="0.8"
+            contype="0" conaffinity="0"/>
+      <geom name="leg_br" type="cylinder" size="0.015 0.370"
+            pos=" 0.37 -0.27 -0.380" material="metal" mass="0.8"
+            contype="0" conaffinity="0"/>
+    </body>
+
+    <!--
+      ============================================================
+      CUBE — 5 cm edge (half-extent = 0.025 m).
+      Rests on the table surface at z = 0.025.
+      x/y position is randomised at each reset.
+      ============================================================
+    -->
+    <body name="cube" pos="0.00 -0.25 0.025">
+      <joint name="cube_joint" type="free"/>
+      <geom name="cube_geom"
+            type="box" size="0.025 0.025 0.025"
+            mass="0.08" material="cube_mat"
+            friction="1.2 0.03 0.002"
+            solimp="0.9 0.95 0.001" solref="0.02 1"
+            contype="1" conaffinity="1"/>
+    </body>
+
+    <!--
+      ============================================================
+      BIN — open-top box  10 × 10 × 5 cm,  wall thickness 5 mm.
+      Fixed on the table (no joint).
+      Body origin = centre of the bin base, on the table surface.
+
+      Position:  x = +0.15 (15 cm to the right of the robot axis)
+                 y = -0.25 (25 cm forward)
+      ============================================================
+    -->
+    <body name="bin" pos="0.15 -0.25 0.0">
+      <!-- Bottom (3 mm thick) -->
+      <geom name="bin_bottom"
+            type="box" size="0.050 0.050 0.003"
+            pos="0 0 0.003"
+            material="bin_mat" mass="0.15"
+            contype="1" conaffinity="1"/>
+      <!-- Left wall (−x) -->
+      <geom name="bin_wall_l"
+            type="box" size="0.005 0.050 0.025"
+            pos="-0.045 0 0.031"
+            material="bin_mat" mass="0.05"
+            contype="1" conaffinity="1"/>
+      <!-- Right wall (+x) -->
+      <geom name="bin_wall_r"
+            type="box" size="0.005 0.050 0.025"
+            pos=" 0.045 0 0.031"
+            material="bin_mat" mass="0.05"
+            contype="1" conaffinity="1"/>
+      <!-- Near wall (−y, facing the robot) -->
+      <geom name="bin_wall_n"
+            type="box" size="0.050 0.005 0.025"
+            pos="0 -0.045 0.031"
+            material="bin_mat" mass="0.05"
+            contype="1" conaffinity="1"/>
+      <!-- Far wall (+y) -->
+      <geom name="bin_wall_f"
+            type="box" size="0.050 0.005 0.025"
+            pos="0  0.045 0.031"
+            material="bin_mat" mass="0.05"
+            contype="1" conaffinity="1"/>
+
+      <!--
+        Goal site: centre of the bin opening.
+        The cube must land here for task success.
+        Injected by PickPlaceTask into model.site_pos at reset if the
+        target is fixed; otherwise the env updates this position.
+      -->
+      <site name="goal_site"
+            type="sphere" size="0.020"
+            pos="0 0 0.040"
+            material="goal_mat"/>
+    </body>
+
+    <camera name="overhead"
+            pos="0.0 -0.30 0.75"
+            xyaxes="1 0 0 0 0.95 -0.31"/>
+    <camera name="side"
+            pos="0.65 -0.55 0.40"
+            xyaxes="0.707 0.707 0 -0.30 0.30 0.90"/>
+  </worldbody>
+
+  <!--
+    Home keyframe: 6 robot joints + 7 cube freejoint (x y z qw qx qy qz).
+    ctrl matches joint positions (position servo actuators).
+  -->
+  <keyframe>
+    <key name="home"
+         qpos="0 -1.57 1.57 1.57 -1.57 0  0.00 -0.25 0.025 1 0 0 0"
+         ctrl="0 -1.57 1.57 1.57 -1.57 0"/>
+  </keyframe>
+
+</mujoco>

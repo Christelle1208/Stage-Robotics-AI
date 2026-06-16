@@ -1,0 +1,189 @@
+<!--
+  SO-100 "Feuille" Scene
+  ======================
+  Tabletop scene built around the unmodified SO-100 robot model
+  (so_arm100.xml, in this same directory). The robot's kinematics/geometry
+  are untouched; only its base placement (pos="0.06 -0.265 0") was set on
+  the "Base" body there, since <include> cannot be repositioned via a
+  wrapping <body>.
+
+  Note: this file lives alongside so_arm100.xml (not in mujoco/scenes/)
+  because the robot's <compiler meshdir="..."> is resolved relative to the
+  including file's directory — keeping them together is what makes the
+  mesh paths resolve correctly.
+
+  Coordinate system (world / table frame, units = meters):
+    - XY plane = tabletop, Z = vertical, table surface at z = 0.
+    - "Feuille" (sheet) is centered at world (0, 0).
+    - Robot base center is at (0.06, -0.265), per the layout below.
+    - "Boite" (box) center is at (0.16, 0.04).
+
+  Layout summary:
+
+        y
+        ^
+        |     +-----------------------------+   <- Feuille top edge (y=+0.08)
+   0.08 |     |  4x4 checkerboard grid       |---+
+        |     |  (0.06 x 0.04 cells)         |Boite (0.08x0.08x0.10, black)
+   0.00 +-----+-----------------------------+---+--> x
+        |     |                             |
+  -0.08 |     +-----------------------------+
+        |              x=-0.12 .. x=+0.12
+        |
+        |        (robot base, x=0.06, y=-0.265)
+        +------------------------- ...
+-->
+<mujoco model="so100_feuille_scene">
+
+  <!-- SO-100 robot (unmodified geometry; base placed at (0.06, -0.265, 0)) -->
+  <include file="so_arm100.xml"/>
+
+  <option timestep="0.004" gravity="0 0 -9.81"/>
+
+  <statistic center="0.06 -0.08 0.05" extent="0.6"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.35 0.35 0.35" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-25"/>
+  </visual>
+
+  <asset>
+    <!-- Sky -->
+    <texture type="skybox" builtin="gradient"
+             rgb1="0.30 0.52 0.73" rgb2="0.02 0.02 0.03"
+             width="512" height="3072"/>
+
+    <!-- Floor / table surface (z = 0) -->
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge"
+             rgb1="0.55 0.42 0.28" rgb2="0.45 0.34 0.22"
+             markrgb="0.6 0.6 0.6" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true"
+              texrepeat="8 8" reflectance="0.05"/>
+
+    <!--
+      Feuille (sheet) material: near-white with a built-in 4x4 checker
+      texture. texrepeat="4 4" makes each texture tile align exactly with
+      one 0.06 x 0.04 m grid cell, giving the "alternate cell colors
+      slightly" checkerboard look requested.
+    -->
+    <texture type="2d" name="feuille_checker" builtin="checker" mark="none"
+             rgb1="1.0 1.0 1.0" rgb2="0.90 0.90 0.88"
+             width="64" height="64"/>
+    <material name="feuille_mat" texture="feuille_checker" texuniform="true"
+              texrepeat="4 4" reflectance="0.02"/>
+
+    <!-- Black grid lines drawn on top of the Feuille -->
+    <material name="grid_line_mat" rgba="0.05 0.05 0.05 1"/>
+
+    <!-- Boite (box) material: black -->
+    <material name="boite_mat" rgba="0.05 0.05 0.05 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0.1 -0.1 1.4" dir="-0.1 0.05 -1" directional="true"/>
+    <light pos="0.4 0.3 1.0" dir="-0.4 -0.3 -0.8" directional="true"
+           diffuse="0.3 0.3 0.3" specular="0 0 0"/>
+
+    <!-- Table / floor surface. Top surface is at z = 0. -->
+    <geom name="table" type="plane" size="0 0 0.05" material="groundplane"/>
+
+    <!-- ================================================================
+         1. FEUILLE (sheet)
+         Size: 0.24 x 0.16 x 0.002 m (X x Y x thickness)
+         Center at world (0, 0); rests on the table (z in [0, 0.002]).
+         ================================================================ -->
+    <body name="feuille" pos="0 0 0">
+      <geom name="feuille_geom" type="box"
+            size="0.12 0.08 0.001" pos="0 0 0.001"
+            material="feuille_mat"
+            contype="0" conaffinity="0"/>
+
+      <!-- ==============================================================
+           2. CHECKERBOARD GRID LINES
+           4x4 grid, cells 0.06 (X) x 0.04 (Y) m, filling the sheet exactly.
+           Visible black grid lines drawn just above the sheet surface
+           (z = 0.0021) at the exact cell-boundary coordinates.
+           ============================================================== -->
+
+      <!-- Vertical lines (run along Y), at x = -0.12, -0.06, 0.00, 0.06, 0.12 -->
+      <geom name="grid_line_x_neg12" type="box" size="0.0008 0.08 0.0001"
+            pos="-0.12 0 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+      <geom name="grid_line_x_neg06" type="box" size="0.0008 0.08 0.0001"
+            pos="-0.06 0 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+      <geom name="grid_line_x_000" type="box" size="0.0008 0.08 0.0001"
+            pos="0.00 0 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+      <geom name="grid_line_x_pos06" type="box" size="0.0008 0.08 0.0001"
+            pos="0.06 0 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+      <geom name="grid_line_x_pos12" type="box" size="0.0008 0.08 0.0001"
+            pos="0.12 0 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+
+      <!-- Horizontal lines (run along X), at y = -0.08, -0.04, 0.00, 0.04, 0.08 -->
+      <geom name="grid_line_y_neg08" type="box" size="0.12 0.0008 0.0001"
+            pos="0 -0.08 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+      <geom name="grid_line_y_neg04" type="box" size="0.12 0.0008 0.0001"
+            pos="0 -0.04 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+      <geom name="grid_line_y_000" type="box" size="0.12 0.0008 0.0001"
+            pos="0 0.00 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+      <geom name="grid_line_y_pos04" type="box" size="0.12 0.0008 0.0001"
+            pos="0 0.04 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+      <geom name="grid_line_y_pos08" type="box" size="0.12 0.0008 0.0001"
+            pos="0 0.08 0.0021" material="grid_line_mat" contype="0" conaffinity="0"/>
+    </body>
+
+    <!-- ================================================================
+         3. BOITE (box / drop bin)
+         Footprint: 0.08 x 0.08 m (X x Y), ~0.10 m tall, open-top.
+         Wall thickness 0.0025 m (slightly more than the sheet's 0.002 m).
+         Center at (0.16, 0.04), attached to the right side of the Feuille,
+         aligned with the sheet's top edge (Feuille right edge = +0.12,
+         top edge = +0.08 -> box center = (0.12+0.04, 0.08-0.04)).
+         Sits on the table: base at z = 0, walls rise to z = 0.10.
+         Black, with collision enabled so it acts as a real drop target.
+         ================================================================ -->
+    <body name="boite" pos="0.16 0.04 0">
+      <!-- Floor of the box -->
+      <geom name="boite_floor" type="box"
+            size="0.04 0.04 0.00125" pos="0 0 0.00125"
+            material="boite_mat" mass="0.10"
+            contype="1" conaffinity="1"/>
+      <!-- Walls (height 0.10 m, thickness 0.0025 m) -->
+      <geom name="boite_wall_xp" type="box"
+            size="0.0025 0.04 0.05" pos="0.0375 0 0.05"
+            material="boite_mat" mass="0.05"
+            contype="1" conaffinity="1"/>
+      <geom name="boite_wall_xm" type="box"
+            size="0.0025 0.04 0.05" pos="-0.0375 0 0.05"
+            material="boite_mat" mass="0.05"
+            contype="1" conaffinity="1"/>
+      <geom name="boite_wall_yp" type="box"
+            size="0.04 0.0025 0.05" pos="0 0.0375 0.05"
+            material="boite_mat" mass="0.05"
+            contype="1" conaffinity="1"/>
+      <geom name="boite_wall_ym" type="box"
+            size="0.04 0.0025 0.05" pos="0 -0.0375 0.05"
+            material="boite_mat" mass="0.05"
+            contype="1" conaffinity="1"/>
+    </body>
+
+    <!-- Cameras -->
+    <camera name="overhead" pos="0.06 -0.05 0.85"
+            xyaxes="1 0 0 0 1 0"/>
+    <camera name="front_cam" pos="0.05 0.28 0.24"
+          xyaxes="-1 0 0 0 -0.50 0.87"/>
+    <camera name="side_cam" pos="0.65 -0.55 0.45"
+            xyaxes="0.707 0.707 0 -0.30 0.30 0.90"/>
+  </worldbody>
+
+  <!--
+    Start pose for this scene.
+    Joint order: Rotation, Pitch, Elbow, Wrist_Pitch, Wrist_Roll, Jaw
+    ctrl matches qpos (position-servo actuators).
+  -->
+  <keyframe>
+    <key name="start"
+                         qpos="0 -3.32 3.14 1.35 -1.51 1.2"
+                         ctrl="0 -3.32 3.14 1.35 -1.51 1.2"/>
+  </keyframe>
+
+</mujoco>

@@ -1,0 +1,156 @@
+INFO 2026-03-04 10:47:50 db_utils.py:117 [1m[34mLogs will be synced with wandb.[0m
+INFO 2026-03-04 10:47:50 db_utils.py:118 Track this run --> [1m[33mhttps://wandb.ai/christelle-nollet-octo-technology/lerobot/runs/gdecn0t7[0m
+INFO 2026-03-04 10:47:50 ot_train.py:215 Creating dataset
+INFO 2026-03-04 10:47:50 eo_utils.py:106 Using video codec: libsvtav1
+INFO 2026-03-04 10:47:50 ot_train.py:233 Creating policy
+Loading  HuggingFaceTB/SmolVLM2-500M-Video-Instruct weights ...
+INFO 2026-03-04 10:47:50 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:50 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/config.json "HTTP/1.1 200 OK"
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights: 100%|█| 489/489 [00:01<00:00, 303.15it/s, Materializing param=model.vision_model.post_
+INFO 2026-03-04 10:47:52 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:52 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/generation_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:52 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:52 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:53 _client.py:1025 HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:47:53 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:53 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:53 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/chat_template.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:53 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/chat_template.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:53 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:47:53 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:47:54 _client.py:1025 HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:47:54 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:54 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:54 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/chat_template.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING 2026-03-04 10:47:54 ls/_http.py:857 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+INFO 2026-03-04 10:47:54 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/chat_template.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:54 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:47:54 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:55 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:56 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/tokenizer_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:56 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:56 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/tokenizer_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:56 _client.py:1025 HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:47:56 _client.py:1025 HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:56 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:56 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:56 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:47:57 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:57 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:57 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:57 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:47:57 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:47:57 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:47:57 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/preprocessor_config.json "HTTP/1.1 200 OK"
+Reducing the number of VLM layers to 16 ...
+INFO 2026-03-04 10:48:00 _client.py:1025 HTTP Request: HEAD https://huggingface.co/masato-ka/SO100_act_generalize_pick_pos_smolvla_40k/resolve/main/model.safetensors "HTTP/1.1 302 Found"
+WARNING 2026-03-04 10:48:01 ies/utils.py:94 Unexpected key(s) when loading model: ['normalize_inputs.buffer_observation_state.mean', 'normalize_inputs.buffer_observation_state.std', 'normalize_targets.buffer_action.mean', 'normalize_targets.buffer_action.std', 'unnormalize_outputs.buffer_action.mean', 'unnormalize_outputs.buffer_action.std']
+INFO 2026-03-04 10:48:01 _client.py:1025 HTTP Request: HEAD https://huggingface.co/masato-ka/SO100_act_generalize_pick_pos_smolvla_40k/resolve/main/policy_preprocessor.json "HTTP/1.1 404 Not Found"
+Traceback (most recent call last):
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_http.py", line 720, in hf_raise_for_status
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '404 Not Found' for url 'https://huggingface.co/masato-ka/SO100_act_generalize_pick_pos_smolvla_40k/resolve/main/policy_preprocessor.json'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/lerobot/processor/pipeline.py", line 654, in _load_config
+    config_path = hf_hub_download(
+        repo_id=model_id,
+    ...<2 lines>...
+        **hub_download_kwargs,
+    )
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py", line 89, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/huggingface_hub/file_download.py", line 982, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+        # Destination
+    ...<15 lines>...
+        dry_run=dry_run,
+    )
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/huggingface_hub/file_download.py", line 1057, in _hf_hub_download_to_cache_dir
+    (url_to_download, etag, commit_hash, expected_size, xet_file_data, head_call_error) = _get_metadata_or_catch_error(
+                                                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        repo_id=repo_id,
+        ^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+        relative_filename=relative_filename,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/huggingface_hub/file_download.py", line 1649, in _get_metadata_or_catch_error
+    metadata = get_hf_file_metadata(
+        url=url,
+    ...<4 lines>...
+        retry_on_errors=retry_on_errors,
+    )
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_validators.py", line 89, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/huggingface_hub/file_download.py", line 1572, in get_hf_file_metadata
+    response = _httpx_follow_relative_redirects_with_backoff(
+        method="HEAD", url=url, headers=hf_headers, timeout=timeout, retry_on_errors=retry_on_errors
+    )
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_http.py", line 651, in _httpx_follow_relative_redirects_with_backoff
+    hf_raise_for_status(response)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/huggingface_hub/utils/_http.py", line 734, in hf_raise_for_status
+    raise _format(RemoteEntryNotFoundError, message, response) from e
+huggingface_hub.errors.RemoteEntryNotFoundError: 404 Client Error. (Request ID: Root=1-69a7ffd1-5b5d2ba026dfd1e52daf3b01;f4a7455b-2c66-4b2e-acdc-28337e172bb9)
+
+Entry Not Found for url: https://huggingface.co/masato-ka/SO100_act_generalize_pick_pos_smolvla_40k/resolve/main/policy_preprocessor.json.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/scripts/lerobot_train.py", line 536, in <module>
+    main()
+    ~~~~^^
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/scripts/lerobot_train.py", line 532, in main
+    train()
+    ~~~~~^^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/lerobot/configs/parser.py", line 233, in wrapper_inner
+    response = fn(cfg, *args, **kwargs)
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/scripts/lerobot_train.py", line 280, in train
+    preprocessor, postprocessor = make_pre_post_processors(
+                                  ~~~~~~~~~~~~~~~~~~~~~~~~^
+        policy_cfg=cfg.policy,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        **postprocessor_kwargs,
+        ^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/lerobot/policies/factory.py", line 267, in make_pre_post_processors
+    PolicyProcessorPipeline.from_pretrained(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        pretrained_model_name_or_path=pretrained_path,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+        to_output=transition_to_batch,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ),
+    ^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/lerobot/processor/pipeline.py", line 567, in from_pretrained
+    loaded_config, base_path = cls._load_config(model_id, config_filename, hub_download_kwargs)
+                               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/lerobot/processor/pipeline.py", line 665, in _load_config
+    raise FileNotFoundError(
+        f"Could not find '{config_filename}' on the HuggingFace Hub at '{model_id}'"
+    ) from e
+FileNotFoundError: Could not find 'policy_preprocessor.json' on the HuggingFace Hub at 'masato-ka/SO100_act_generalize_pick_pos_smolvla_40k'

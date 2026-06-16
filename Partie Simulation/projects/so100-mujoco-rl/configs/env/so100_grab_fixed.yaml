@@ -1,0 +1,47 @@
+# SO-100 "grab cube" task — FIXED position variant
+#
+# Identical to so100_grab.yaml, but the cube spawns at a FIXED position
+# (center of the Feuille sheet) for easier sim-to-real validation.
+#
+# Scene: assets/robots/so100/so100_feuille_scene.xml
+#   Feuille (sheet): 0.24 x 0.16 m, centered at world (0, 0), top z = 0.002
+#   Robot base: (0.06, -0.265), facing +y (toward the Feuille)
+#
+# The cube (3 cm edge) is added programmatically by SO100GrabEnv._patch_spec
+# and spawns at a FIXED position (center of sheet) each episode.
+#
+# Success: end-effector within `success_threshold` of the cube, gripper OPEN
+# (close_fraction < gripper_open_threshold), held for `hold_steps` consecutive
+# steps.
+
+env_id: SO100Grab-v0
+scene_xml: assets/robots/so100/so100_feuille_scene.xml
+max_episode_steps: 150
+render_mode: human
+
+control:
+  action_scale: 0.05
+  control_mode: joint_delta_position
+  lock_wrist_roll: true
+  wrist_roll_home: -1.51
+
+task:
+  object_name: cube
+  end_effector_site: ee_site
+  gripper_joint: Jaw
+  success_threshold: 0.005       # metres (ee-to-cube) — within 5 mm
+  gripper_open_threshold: 0.5
+  hold_steps: 15
+  cube_spawn_z: 0.017
+
+randomization:
+  # Cube spawns at a FIXED position: center of the Feuille (x=0, y=0).
+  # Range is ±0.001 m (~1 mm), so it stays effectively at the origin.
+  cube_range:
+    x: [-0.001, 0.001]
+    y: [-0.001, 0.001]
+
+reward:
+  reach_weight: 1.0
+  success_bonus: 10.0
+  action_penalty: 0.01

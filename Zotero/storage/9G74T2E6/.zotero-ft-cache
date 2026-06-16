@@ -1,0 +1,830 @@
+International Journal of Advanced Robotic Systems
+Automated Trajectory Planner of
+Industrial Robot for Pick-and-Place Task
+Regular Paper
+S. Saravana Perumaal1,* and N. Jawahar1
+1 Department of Mechanical Engineering, Thiagarajar College of Engineering, Madurai, Tamilnadu, India * Corresponding author E-mail: sspmech@tce.edu
+Received 5 Aug 2012; Accepted 1 Oct 2012
+DOI: 10.5772/53940
+© 2013 Perumaal and Jawahar; licensee InTech. This is an open access article distributed under the terms of the Creative Commons Attribution License (http://creativecommons.org/licenses/by/3.0), which permits unrestricted use, distribution, and reproduction in any medium, provided the original work is properly cited.
+Abstract Industrial robots, due to their great speed, precision and cost‐effectiveness in repetitive tasks, now tend to be used in place of human workers in automated manufacturing systems. In particular, they perform the pick‐and‐place operation, a non‐value‐added activity which at the same time cannot be eliminated. Hence, minimum time is an important consideration for economic reasons in the trajectory planning system of the manipulator. The trajectory should also be smooth to handle parts precisely in applications such as semiconductor manufacturing, processing and handling of chemicals and medicines, and fluid and aerosol deposition. In this paper, an automated trajectory planner is proposed to determine a smooth, minimum‐time and collision‐free trajectory for the pick‐and‐place operations of a 6‐DOF robotic manipulator in the presence of an obstacle. Subsequently, it also proposes an algorithm for the jerkbounded Synchronized Trigonometric S‐curve Trajectory (STST) and the ‘forbidden‐sphere’ technique to avoid the obstacle. The proposed planner is demonstrated with suitable examples and comparisons. The experiments show that the proposed planner is capable of providing a smoother trajectory than the cubic spline based trajectory.
+Keywords Trajectory Planning, S‐Curve Trajectory, Jerk, Collision Avoidance, Robotic Manipulator
+1. Introduction
+Industrial robots, due to their great speed, precision and cost‐effectiveness in repetitive tasks, now tend to be used instead of manual workers in automated production lines. These powerful machines are hardly autonomous, in the sense that they require preliminary actions such as calibration and trajectory planning in order to achieve defined tasks [1]. The trajectory planning problem is a fundamental one in robotics and defines a temporal motion law with a given geometric path, so that certain requirements set for the trajectory are fulfilled. The aim of trajectory planning is to generate the input for the control system of the manipulator to execute a motion. Figure 1 describes the structure of the automated trajectory planning system [2]. The input data for any trajectory planning algorithm are: geometric path, kinematic and dynamic constraints. The geometric path describes the path to be followed by the end‐effector for continuous motion such as welding, painting, etc.; for a point‐topoint motion such as a pick‐and‐place operation, however, the path of the end‐effector is immaterial in the absence of obstacles. In the presence of any obstacles, the user defines the way point’s position and the orientation of the end‐effector or series of knot vectors to avoid the collision [3,4,5].
+1
+S. Saravana Perumaal and N. Jawahar: Automated Trajectory Planner of Industrial Robot for Pick-and-Place Task
+www.intechopen.com
+ARTICLE
+www.intechopen.com Int J Adv Robotic Sy, 2013, Vol. 10, 100:2013
+
+
+Figure 1. Structure of automated trajectory planning system
+The kinematic constraints are the velocity and acceleration limits (and jerk limits, if available) of the actuators as given by the manipulator manufacturer. Most of the manufacturers provide velocity limits for both joint‐space motion and for task‐space motion (i.e., straight‐line path motion limits). The dynamic constraints specify torque limits for each joint. The high‐level trajectory planner computes a reference trajectory for each task by checking the way points and assigns specific velocities to these points. The output is the trajectory of the joints (or of the end‐effector), expressed as a time history of position, velocity and acceleration. Then, the completed portions of the trajectory are sent to the controller through a set‐point generator. The proposed trajectory planner is able to generate a collision‐free trajectory without any userdefined intermediate way points or knot points. This paper focuses on an automated trajectory planner for PUMA 560, the most‐used industrial robot in experiments with 6‐DOF, to carry out the pick‐and‐place operation.
+Almost every technique found in the scientific literature on the trajectory planning problem is based on the optimization of some parameter or objective function. The general optimality criteria are: minimum execution time, minimum energy (or actuator effort) and minimum jerk. Some hybrid optimality criteria such as time‐energy optimal trajectory planning and jerk time optimal trajectory planning have also been proposed. Minimumtime algorithms are tightly linked to the need to increase productivity in the industrial sector [4]. Pick‐and‐place is a non‐value‐added activity which at the same time cannot be eliminated. Hence, it must show minimal lead time and give maximum production. Therefore, the minimum time is considered to be important for economic reasons. However, in order to implement the trajectory in real time, the method must have a low computational complexity.
+Jerk directly influences the motion of the robot in many aspects and a minimal jerk ensures smooth motion. The benefits of jerk minimization are: reduction in trajectory tracking errors, less stress induced in actuators and the structure of the manipulator, limited excitation of resonance frequencies of the robot, and the bringing about of natural and coordinated robot motion. It has been established that limiting jerk in manipulator trajectories reduces manipulator wear and improves tracking accuracy and speed [2,6‐9]. Direct tracking of a time‐optimal trajectory leads to joint vibrations and overshoot of the nominal torque limits [10]. Jerk limitation (and, proportionally, torque rate) results in smoothed actuator loads [6]. This effectively reduces the excitation of the resonant frequencies of the manipulator and consequently reduces actuator wear [9]. Low jerk trajectories can be tracked faster and more accurately [10]. Macfarlane and Croft [2] also inferred that a sine wave template for accelerations of smooth trajectory ensures that the quintics do not oscillate. Jerk minimization is considered as equal as or sometimes more than the minimum time requirement. Smooth motion without any unwanted variations in the manipulator’s movement (i.e., with minimum jerk) is required for the applications such as semiconductor manufacturing, processing and handling of chemicals and medicines, fluid and aerosol deposition. On the above concerns, the generation of a smooth and minimum‐time trajectory for a 6‐DOF robot manipulator suitable for precise handling applications is the objective of the proposed trajectory planning system.
+Various approaches have been attempted to obtain smooth and/or time‐optimal trajectories. Initial work in robot trajectory planning focused mainly on time optimality [11]. Geering et al. [12] showed that the unconstrained time‐optimal trajectory was either bangbang or bang‐singular‐bang. Bobrow et al. [13] and Shin and Mckay [14] showed that the optimal parameterized path to Path‐Constrained Time‐Optimal Motion (PCTOM) was also bang‐singular‐bang. It is further proved that all optimal paths must be saturated in at least one actuator at all times [15]. Kieffer et al. [16] developed a torque‐based controller attempting to track the PCTOM while limiting actuator chatter. Constantinescu and Croft [10] presented a method for calculating smooth and timeoptimal path‐constrained trajectories. Smooth and timeoptimal motion was obtained by optimizing a base trajectory subject to actuator torque and torque rate limits. Gasparetto and Zanotto [17] suggested an indirect method to get the same results, namely to set an upper limit on the jerk, defined as the time derivative of the acceleration of the manipulator joints. Cubic splines are often used in smooth trajectory generation [15,18‐27]. Since cubic splines can ensure the continuity of velocity and acceleration, they are widely used for interpolation and to prevent large oscillations of the trajectory, which can result in higher‐order polynomials [18]. Cao et al. [25]
+Input: Task Plan, Geometric Path, Kinematic and Dynamic Constraints
+Output: Time Sequence of Position, Velocity, Acceleration and Jerk
+Task‐planner
+High‐level trajectory planner
+Trajectorygenerator
+Set Point Generator
+Controller
+Robot
+Trajectory Planner
+2 Int J Adv Robotic Sy, 2013, Vol. 10, 100:2013 www.intechopen.com
+
+
+optimized a piecewise cubic polynomial spline to obtain a smooth and time‐optimal constrained motion. The timeoptimal motion has been approximated using a Linear Segment with Parabolic Blends (LSPB) type trajectory with carefully selected switching points [10,13]. Chand and Doty [19] used polynomial splines to interpolate between joint target points. Higher order polynomials are generally not used due to their tendency to oscillate and, therefore, to generate retrograde motion [8,19]. Trigonometric Splines [26,28], Quintic Splines [2,4] and Bsplines [29,30] have also been used to generate smooth trajectories. Various splines including the Cubic Spline, Trigonometric Spline, Polynomial Spline, Quintic Spline, B‐spline are proposed for jerk‐limited motion profiles. These profiles are generated with the help of knot vectors which are specified by the user for interpolation.
+S‐curve motion is another approach for jerk‐limited motion [27‐29]. The generation of S‐curve trajectory does not require any knot points for interpolation. Tsay and Lin [27] developed an input strategy with fast acceleration and slow deceleration to minimize the residual response based on 3rd order polynomial S‐curve motion profiles. Nguyen et al. [28] presented the generalized polynomial S‐curve model together with the proposal of a general algorithm to design S‐curve motion trajectories. They also made a comparison of the actual velocity of the 3rd, 4th and 5th order S‐curve motions performed by the linear motor and the position errors of those S‐curve motions. Their results indicate that the higher the order of the model, the better the performance of the linear motor. Experiments were also carried out on a linear motor system to study its performance with the motion profiles planned by the trigonometric model, which replaces the rectangular pulse in the jerk of the 3rd order S‐curve model by a trigonometric function. Li et al. [29] proposed acceleration‐bounded S‐curve motion for jerk‐limited operation and implemented it on a Digital Signal Processing (DSP) based motion controller for a voice coil motor. The review reveals that the trigonometric S‐curve trajectory is:
+ as simple as the 3rd order polynomial model and  capable of producing a smooth trajectory as good as 5th order polynomial S‐curves and quintic splines.
+Taking the above points into consideration, this paper proposes a new jerk‐bounded S‐curve trajectory with a sine wave form of jerk profile and the motion profiles: displacement, velocity and acceleration are generated within the maximum jerk value so as to obtain the desired smoother movement without any abrupt changes. This paper also proposes a trajectory planner for a smooth and minimum‐time collision‐free trajectory under kinematic and obstacle constraints for the pick‐and‐place operations of a 6‐DOF robotic manipulator. The rest of
+the paper is organized as follows: section two describes the problem description, section three outlines the proposed planner with the illustrative numerical examples, section four discusses the results and section five presents the conclusion.
+2. Problem Description
+2.1 Operational features
+Figure 2 shows the operation sequence of a 6‐DOF robotic manipulator between two destinations. The robot’s joints follow a Synchronized Trigonometric S‐curve Trajectory (STST) between initial destination ‘P’ and final destination ‘Q’, which are described with Cartesian description. The STST has three phases: Acceleration, Constant Velocity and Deceleration.
+Figure 2. Operation sequence of a 6‐DOF robotic manipulator between two destinations
+Let t1 , t2 , t3 and t4 be the absolute time instants when the robot is at the initial destination ‘P’, end of the acceleration phase ‘L’, start of the deceleration phase ‘S’ and final destination ‘Q’, respectively. Figure 3 shows the motion of each joint ‘ n ’ during the three phases, and the characteristic features are described in Table 1.
+Figure 3. Schematic Time History Trigonometric S‐curve trajectory of a joint: a) Displacement, b) Velocity, c) Acceleration and d) Jerk
+3
+S. Saravana Perumaal and N. Jawahar: Automated Trajectory Planner of Industrial Robot for Pick-and-Place Task
+www.intechopen.com
+
+
+Phase Time Duration Jerk n (t)
+
+ Acceleration, n (t)
+
+ Velocity, n (t )
+
+
+Form Peak Values
+Time Instants
+Form Peak Values
+Time Instants
+Form Peak Values
+Time Instants Lift‐off phase, P to L
+T L t2 t1
+n   Sine
+wave
+L
+Jn
+S
+ Jn
+ L
+t 4 Tn
+1
+ L
+t 4 Tn
+3
+Level shifted cosinusoidal wave
+L
+An  L 
+t 2 Tn
+ 1 Part of Level
+shifted cosinusoidal wave
+L
+Vn t  t1
+Constant Velocity phase, L to S
+T V t3 t2
+n   Horizont
+al line along zero line
+V 0
+Jn t2  t  t3 Horizontal
+line along zero line
+V 0
+An t2  t  t3 Horizontal
+line, along
+V
+Vn
+V n
+L
+Vn  V t2  t  t3
+Set‐down phase, S to Q
+T S t4 t3
+n   Negative
+Sine wave
+S
+ Jn
+L
+Jn
+ S
+t 4 Tn
+1
+ S
+t 4 Tn
+3
+Level shifted negative cosinusoidal wave
+S
+ An  S 
+t 2 Tn
+ 1 Part of level
+shifted negative cosinusoidal wave
+V
+Vn t  t3
+Table 1. Characteristic features of joint motions of STST
+2.2 Objective criterion
+Generation of smooth trajectory for handling parts without vibration coupled with minimum time is the major objective under consideration in this paper. The proposed STST ensures jerk within the user‐defined specifications. The minimum time depends on the sum of the time intervals during the three phases of the trajectory between the destinations ‘P’ and ‘Q’. Equation 1 provides the time taken by each joint to execute all the three phases.
+
+PQ L V S n nn n
+T  T  T  T (1)
+However, it is necessary that start and end instances of the three different phases of all the joints should occur at the same time to ensure the robot’s end‐effector follows an STST between any‐destinations point ‘P’ and final destination ‘Q’. This is achieved by synchronizing all the joint motions with the joint that takes more time. Therefore, the execution time of the robot for the specified operation between the destinations ‘P’ and ‘Q’ is given in (2).
+   
+max max max
+PQ L V S sync n n n
+T TT T nn n
+
+ 
+
+ 
+  (2)
+Hence, the objective function to the problem is the minimization of PQ
+sync
+T expressed in equation (2).
+2.3 Constraints
+The robot kinematic parameters control/limit the minimum execution time and become the constraints on the problem. Each joint of the robot has its position within its specified range min max
+,
+nn
+
+
+  and the kinematic
+constraints are: maximum velocity, max
+Vn , maximum
+acceleration, max
+An and maximum jerk max
+Jn values of all (six) joints. Another important consideration in the trajectory planning problem is the presence of obstacles. This work considers the fixed obstacle (OBS) as a cube where side a and the reference base corner Pr are
+known. P1 , P2 and P3 are the extreme points on the obstacle along the X, Y and Z directions in relation to Pr as shown in Figure 4. With the help of these points, a set of parametrically discretized points of the obstacle is defined as ( , , )
+ob ob ob
+R x y z , expressed in:
+11 2 2 33
+(, ,)
+ob ob ob r
+R x y z  P  u P  u P  u P (3)
+where 1 2 3
+0  u ,u ,u  1
+where 1 2 3
+u ,u ,u are the parametric variables of the X, Y
+and Z directions with respect to Pr . Figure 4 shows the
+discretized points of the obstacle. The above expression can also be written in a matrix form for the Cartesian components of the Pr , P1 , P2 and P3 as expressed in (4).
+1231
+1 2 3 123
+2
+123 3
+1
+0 ,, 1
+ob r
+ob r
+ob r
+x xxxxu
+y y y y y uuu
+u
+z zzzzu
+
+    
+    
+ 
+    
+    
+    
+
+(4)
+Figure 4. Obstacle with its discretized set of points
+In order to ensure the collision‐free trajectory, interference of the end‐effector or the links of the robot with the obstacle is to be avoided at all times. The joints of the robot have been considered as points and these points are connected by the line segments which represents the links
+4 Int J Adv Robotic Sy, 2013, Vol. 10, 100:2013 www.intechopen.com
+
+
+of the robot. PB , PJ1 , PJ2 , PJ3 and PJ4 are the Cartesian points of the robot base, joints 1, 2, 3 and 4, respectively. Since the origins of the other two joints 5 and 6 are located at the origin of joint 4, the robot is considered to have four links. The links are created parametrically as lines connecting the joints of the robot, i.e., line L1 connecting PB and PJ1 is link1 and other links L2 , L3 and L4 are similarly defined between PJ1 and PJ2 , PJ2 and PJ3 , and PJ3 and PJ4 , respectively. The locations of robot joints and approximated links are specified in Figure 5, which depicts the link generation scheme and the zero position of the PUMA 560. Since the last three joints are intersected, the four links have been considered to represent the robot.
+Figure 5. Link generation scheme for the robot configuration at zero position of PUMA 560
+Let L(x, y,z,t) be the set of Cartesian points of these four
+lines, which represent the links of the manipulator at the time instant ‘ t ’. It is expressed in (5):
+1
+1
+12
+2
+2
+33
+43 4
+( , , ,) 0 1
+J
+B
+JJ
+JJ
+JJ
+P
+P
+L
+PP
+L
+Lxyzt u u
+P
+LP
+LP P
+
+
+  
+
+  
+
+
+   
+
+
+  
+
+  
+
+
+   
+(5)
+This restricts the free movement of the robot links and end‐effector, and imposes an additional constraint.
+2.4 Problem definition
+The problem can be stated briefly thus:
+“Determination of smooth (jerk‐limited) and minimum‐time trajectory of 6‐DOF robotic manipulator, given the Cartesian position and orientation of end‐effector at the pick‐and‐place destinations in its dexterous workspace, under the constraints of kinematic limitation on jerk, acceleration and velocity, and obstacle”.
+2.5 Mathematical Model
+The mathematical formulation is as follows:
+Objective Function:
+
+PQ sync
+Minimize T (6)
+Subject to
+min max
+( ) ( ) ( ) 1, 2...6
+n nn
+ t  t  t n  (Position Constraint) (7)
+max
+( ) 1,2...6
+nn
+t V n
+
+   (Velocity Constraint) (8)
+max
+( ) 1,2...6
+nn
+t A n
+
+   (Acceleration Constraint) (9)
+max
+( ) 1,2...6
+nn
+t J n
+
+   (Jerk Constraint) (10)
+( , , ,) ( , , )
+ob ob ob
+L x y z t  R x y z (Obstacle Constraint) (11)
+3. Proposed Trajectory Planner
+The manipulator joint‐level information has been considered for generating optimal trajectories in most contributions to the literature. However, offline programming requires defining the pick‐and‐place destinations with Cartesian space description. Taking this into consideration, the proposed planner is designed to execute smooth, time‐optimal pick‐and‐place operations with the use of Cartesian description of end‐effector at pick‐and‐place destinations without any user‐defined intermediate way points or knot points. An enumerative procedure is proposed in pursuit of a smooth and minimum‐time trajectory of a 6‐DOF PUMA robot for handling fragile parts. The algorithm involves two stages: stage 1 searches for feasible trajectories without a via‐point. Where there is no feasible solution in stage 1, the planner proceeds to stage 2 to search for feasible paths with a viapoint. Figure 6 depicts the two‐stage structure of the proposed planner. This section illustrates the different modules of the two‐stage automated trajectory planner.
+3.1 Data Input
+The data related to robot link and kinematic parameters, robot configurations at pick‐and‐place destinations, and the obstacle, are given as input. Consider the following data for illustration. The link parameters of PUMA 560 are shown in Table 2 [30] and its kinematic parameter limits are given in Table 3 [1]. Table 4 provides the position and orientations of the end‐effector at pick‐andplace destinations. The obstacle is assumed to be a cube of side 0.45 m and it is located with one of its base corners at a distance 0.2 m, 0 m and 0.8 m from the robot base.
+Table 2. Denavit Hartenberg (DH) parameters of PUMA 560 [30]
+5
+S. Saravana Perumaal and N. Jawahar: Automated Trajectory Planner of Industrial Robot for Pick-and-Place Task
+www.intechopen.com
+
+
+Table 3. Kinematic parameters of PUMA 560
+Table 4. Position and orientation of the end‐effector in Cartesian space
+Figure 6. Flow chart of the proposed trajectory planner
+Calculate: Possible configurations at pick and place destinations
+Evolve: Paths for all combinations of joint configurations
+Data Input: Robot Link Parameters, Robot joint kinematic parameters, Robot end effector’s description and Obstacle description
+Determine: Cartesian coordinates of the obstacle
+Generate: Trajectories of joints
+Feasible path>0
+Generate: Set of Via‐points
+Select: Via‐point randomly
+Set: Orientation of via point as average of Cartesian orientations between pick and place destinations
+Calculate: Possible configurations at via point destinations
+Generate: Possible paths at pick, via and place destinations
+Generate: Trajectories of joints evaluate all paths
+Feasible path>0
+Select: The best feasible path(s) and their configurations
+No
+No
+Yes
+Yes
+Stage 1
+Stage 2
+Evaluate: All paths for feasibility
+Evaluate: All paths for feasibility
+6 Int J Adv Robotic Sy, 2013, Vol. 10, 100:2013 www.intechopen.com
+
+
+3.2 Determination of Cartesian coordinate of obstacle
+When all parametric variables 1 2 3
+u ,u ,u are zero, (, ,)
+ob ob ob
+R x y z represents the point Pr . If any one of these variables 1 2 3
+u ,u ,u is one and other two variables are zero, ( , , )
+ob ob ob
+R x y z represents the extreme points P1 , P2 and P3 respectively. When all these variables reach their upper limit, one, then ( , , )
+ob ob ob
+R x y z denotes a corner of the cube which is diagonal to Pr . Therefore, a set of discretized points ( , , )
+ob ob ob
+R x y z is generated by varying each of the parametric variables whilst keeping the other two variables constant. In other words, each combination of the parametric variables provides a point on the obstacle. If each variable is incremented with 0.1 in all directions, this results in 1331 (11x11x11) points in the set (, ,)
+ob ob ob
+Rx y z .
+3.3 Calculation of all eight possible configurations at the destinations
+Given the Cartesian description of end‐effector in dextrous workspace, there can be eight possible ways for a 6‐DOF robotic manipulator to approach a particular destination through its inverse kinematic calculation. There are eight possible configurations as specified in the inverse kinematic solution tree for PUMA 560, as shown in Figure 7, at any Cartesian description of the endeffector in its dextrous workspace. The first three joints of PUMA 560 yield four possible positions with a combination of arm positions, ‘left’ and ‘right’ with ‘top’ and ‘down’, i.e., the first joint positions have four combinations of 1 , 2 and 3 , and their suffixes, ‘a’, ‘b’,
+‘c’, and ‘d’, represent label of combination.
+Figure 7. Inverse kinematic solution tree for PUMA 560 robotic manipulator
+Similarly, the wrist with 4 , 5 and 6 has two kinds of orientation, ‘no flip’ and ‘flip’, for each combination of arm positions. The expressions (12), (13) and (14) show the relationship between wrist orientations ‘no flip’ and ‘flip’ [9]:
+5a 5b
+   (12)
+4 4 180
+ab
+    (13)
+6 6 180
+ab
+    (14)
+Table 5 and Table 6 provide the possible robot configurations at pick, ‘P’ and place, ‘Q’ destinations, respectively for the position and orientations of the endeffector as described in Table 4.
+Table 5. All possible robot configurations at ‘P’
+Table 6. All possible robot configurations at ‘Q’
+3.4 Generation of 64 possible paths for all combinations of joint configurations between destinations
+Considering all combinations of robot configurations at pick‐and‐place destinations, there are 64 possible ways to move between destinations, i.e., combination of each robot configuration of ‘P’ with eight robot configurations of ‘Q’ results in 64 (8x8) paths between the destinations given in Table 7.
+Table 7. All 64 paths between the destinations ‘P’ and ‘Q’
+3.5 Evolution and Evaluation of trajectories
+This module generates STST, finds the execution time and checks for feasibility (i.e., collision‐free) for all 64 paths. Figure 8 provides the sequence of steps involved, which are delineated in this section.
+3.5.1 Input: Joint configuration
+The joint description (position and orientation) of the robot’s joints P
+n and Q
+n at pick destination ‘P’ and place destination ‘Q’ is the input for the generation of STST. As an example, Table 8 provides the joint configuration of path no. 62 with its configurations P8 and Q6 at pick and place destinations respectively.
+7
+S. Saravana Perumaal and N. Jawahar: Automated Trajectory Planner of Industrial Robot for Pick-and-Place Task
+www.intechopen.com
+
+
+Figure 8. Flow chart of the feasible path generation module
+Table 8. Data used for illustration of path no. 62
+3.5.2 Calculation of required displacements for S‐curve trajectory
+Each joint requires a specific displacement PQ
+n for the move from ‘P’ to ‘Q’, and this is found using (15):
+PQ Q P n nn
+   (15)
+The required displacements of the joints for path no. 62 (Table 8) are:
+123456
+,,,,,
+PQ PQ PQ PQ PQ PQ PQ
+n      
+
+      
+
+= [1.600, 3.142, 2.450, 2.623, 2.187, ‐0.347] rad
+3.5.3 Calculation of minimum execution time and kinematic parameters of all joints
+First, the lower bound of execution time is calculated. The kinematic parameters max max max
+,,
+n nn
+J A V limit the time for executing the motions during each of the three phases.
+The minimum time  L l
+Tn and its corresponding
+maximum displacement  L u
+n during the acceleration phase are found using (16) and (17) respectively:
+  max
+2 1 max
+Ll n
+n n
+A
+T tt J
+
+   (16)
+   2
+max
+1 4
+Lu L n nn
+ A T 
+  
+  (17)
+Similarly, the minimum time  S l
+Tn and its maximum
+displacement  S u
+n during the deceleration phase are given in (18) and (19) respectively:
+  max
+4 3 max
+Sl n
+n n
+A
+T tt J
+
+   (18)
+   2
+max
+1 4
+Su S n nn
+ A T 
+  
+  (19)
+The required displacement during the acceleration and deceleration phases are calculated as in (20) and (21):
+    
+  
+2
+u uu
+L PQ L s n n nn L
+n PQ u u
+PQ L s
+n
+n nn
+if
+if
+  
+   
+    
+      
+
+(20)
+    
+  
+2
+u uu
+S PQ L s n n nn S
+n PQ u u
+PQ L s
+n
+n nn
+if
+if
+  
+
+  
+    
+
+    
+
+(21)
+The displacement during the constant velocity phase V
+n is calculated using (20) and (21) as given in (22):
+  
+  
+0
+uu
+PQ L S PQ L s n nn n n n
+V
+n uu
+PQ L s n nn
+if
+if
+     
+ 
+            
+
+(22)
+Therefore, the minimum time for the constant velocity phase is given in (23.
+  3 2 max
+V
+Vl n
+n n
+T tt V
+
+   (23)
+The minimum execution time of the joint ‘ n ’ during a robot motion cycle is given in (24):
+  
+l l ll
+PQ L V S n nn n
+T  T  T  T (24)
+Since the minimum time for the execution of the acceleration phase cannot be further reduced without increasing the jerk, the kinematic parameters max
+An , max
+Jn ,
+max
+Vn are to be adjusted/tuned to L
+An , L
+Jn and V
+Vn for the required displacement, and are provided in (25), (26) and (28) respectively:
+ 2
+4L
+Ln
+n nL l
+A
+T
+
+
+
+
+
+(25)
+
+L
+Ln
+n Ll n
+A
+J T
+
+ (26)
+8 Int J Adv Robotic Sy, 2013, Vol. 10, 100:2013 www.intechopen.com
+
+
+The jerk and acceleration values will affect the velocity of each joint, calculated as in (27):
+ 2
+2
+L n
+L
+nL n
+A VJ
+
+ (27)
+During the constant velocity phase, the acceleration and jerk are zero‐valued, i.e., 0
+V
+An  and 0
+V
+Jn  , and the
+velocity V
+Vn equals the velocity limit of the acceleration
+phase L
+Vn . It is kept constant throughout this phase.
+VL nn
+V  V (28)
+The shape of the deceleration phase is symmetrical and has negative kinematic parameters. The equations (29) and (30), respectively, provide the acceleration and jerk limits for the deceleration phase.
+ 2
+4S
+Sn
+n Sl n
+A
+T
+
+
+
+
+
+(29)
+
+S
+Sn
+n Sl n
+A
+J T
+
+ (30)
+Then, the velocity of the deceleration phase is calculated as in (31):
+ 2
+2
+S n
+S
+nS n
+A VJ
+
+ (31)
+Considering the kinematic bounds as described in Table 2, the time and kinematic limits required for each joint in respect to the displacements are calculated using expressions (15) to (31) for an unsynchronized motion for the given input (Table 8). It is assumed that the time for both the acceleration and deceleration phases is equal, i.e., L S
+nn
+T  T . The time and corresponding kinematic parameters are calculated for all joints and tabulated in Table 9 as follows:
+Table 9. Time and kinematic information of unsynchronized motion for the 62nd path
+3.5.4 Calculation of Synchronized execution time of S‐curve trajectory and its kinematic joint limits
+The trajectories are controlled by the combined acceleration and jerk values for the acceleration and deceleration phases. Specifically, these phases are influenced by the ratio of jerk and acceleration values. When jerk reaches its maximum bound, the ratio of jerk
+to acceleration is considered to be the trajectory frequency
+L
+n with which the pattern of trajectory of each kinematic parameter will be set, given in (27).
+2L
+Ln
+nL n
+J
+A
+  (32)
+The trajectory frequency of the acceleration phase for the values given in Table 9 is: L
+n = [6.000 6.667 6.667 5.000 5.000 5.000] (cycles/sec).
+Similarly to the acceleration phase, the deceleration phase of the trajectory has the frequency S
+n , which is given in (33):
+2S
+Sn
+nS n
+J
+A
+  (33)
+Since the times for the acceleration and the deceleration phases are equal ( L S
+nn
+T  T ) for the values given in Table 9, the trajectory frequency of the deceleration is L
+n , i.e.,
+S
+n = [6.000 6.667 6.667 5.000 5.000 5.000] (cycles/sec). However, the motions of all joints during each phase should be time‐synchronized for the robot to reach ‘L’ and ‘S’ points at the time instants t2 and t3 with STST. Synchronization means that the execution of the required displacement of each phase of motion of all joints is accomplished with the same start and end times. The kinematic parameters can be further reduced by synchronizing the motions of all joints with the slowest joint, the joint with the highest minimum execution time. In order to synchronize the joint motions, the execution times of three phases are calculated based on the slowest joint in their respective phases using (34) to (36).
+  
+max 1,2...6
+l
+LL sync n
+T Tn
+
+
+
+  (34)
+  
+max 1,2...6
+l
+VV sync n
+T Tn
+
+
+
+  (35)
+  
+max 1,2...6
+l
+SS sync n
+T Tn
+
+
+
+  (36)
+Then, total execution time for pick and place task is calculated as in (37).
+PQ L V S sync sync sync sync
+T  T  T  T (37)
+9
+S. Saravana Perumaal and N. Jawahar: Automated Trajectory Planner of Industrial Robot for Pick-and-Place Task
+www.intechopen.com
+
+
+Therefore, other joints are operated with lesser kinematic values in order to synchronize their motion and for executing the smooth motion. In this work, it is considered that all the phases of the trajectory (acceleration, constant velocity and deceleration phases) are synchronized i.e. all joints execute the same phase of the trajectory at any instant of time. In order to synchronize all the joints, the synchronized trajectory frequency L
+sync
+ is set as minimum value among the trajectory frequencies of the joints and is expressed in (38).
+
+min
+LL sync n
+   (38)
+It is assumed that acceleration and deceleration phases operate with equal time interval L S
+sync sync
+T  T and hence, they have same trajectory frequency, i.e. L S
+sync sync
+   . The resultant the kinematic values during the acceleration and deceleration phases, are equal in their magnitude but differ in the sign. Then, the kinematic parameters (acceleration sync
+An , jerk sync
+Jn and velocity sync
+Vn ) are updated for synchronization with the help of the synchronized trajectory frequency L
+sync
+ as given in (39), (40) and (41), respectively. The synchronized motion for the inputs given in Table 8 can be achieved through the expressions (34) to (41) and are given in Table 10.
+ 2
+4L
+sync n
+nL sync
+A T
+
+ (39)
+2
+sync
+L
+sync n
+sync n
+A
+J   (40)
+sync
+sync n
+nL sync
+A
+V
+  (41)
+Table 10. Time and kinematic information of synchronized motion for the 62nd path
+3.5.5 Generation of time history of kinematic parameters of all joints for the synchronized motion
+Once, the kinematic limits are identified, the time history (trajectory) of each kinematic parameter is generated for synchronized motion of the robot in carrying out the pick‐and‐place operation. Time history of joints may be
+with or without a constant velocity phase. For example, consider the following: 1 0deg
+P  and 1 100deg
+Q  are joint positions at initial destination ‘P’, and final destination ‘Q’, respectively, and whose maximum kinematic limits are max
+V1  10deg/ sec;
+max 2
+A1  4deg/ sec ; max 3
+J1  2.5deg/ sec . Figure 9 depicts the time history of STST with the constant velocity phase generated using the expressions (15) to (31).
+Figure 9. Time history of joint (with constant velocity phase): a) Displacement, b) Velocity, c) Acceleration, d) Jerk
+If the maximum kinematic limits of the joint are
+max
+V1  20deg/ sec; max 2
+A1  8deg/ sec ; max 3
+J1  5deg/ sec ,
+with the same joint positions at ‘P’ and ‘Q’, then the corresponding STST is generated without the constant velocity phase, as shown in Figure 10.
+Figure 10. Time history of joint (without constant velocity phase): a) Displacement, b) Velocity, c) Acceleration, d) Jerk
+With the help of the expressions for synchronization (15) to (41) and by operating at kinematic values given in Table 3, the STST for the configurations of the 62nd path are generated and are shown in Figure 11. The time for executing the path between these configurations given in Table 8 is 2.513 sec and minimum of maximum jerk value is 9.9485 rad/sec3.
+Figure 11. STST of PUMA 560 for 62nd path: a) Displacement, b) Velocity, c) Acceleration, d) Jerk
+10 Int J Adv Robotic Sy, 2013, Vol. 10, 100:2013 www.intechopen.com
+
+
+3.5.6 Generation of Cartesian coordinates for links at all time instants
+With the help of the trajectory that has been generated in joint space, the Cartesian coordinate values of the links have been calculated/generated at every time instant of the synchronized motion. For the known robot joint space information, the Cartesian coordinate values of the joints are calculated using suitable transformation matrices of the forward kinematics, as described in section 2.3. The information on the links has been updated at every STST time instant .
+3.5.7 Simulation of Collision check
+In a working environment with an obstacle as shown in Figure 12, the synchronized trajectories generated in section 3.5.5 may be feasible, i.e., collision‐free (represented by the continuous line) or infeasible (represented by the dotted line). For the known joint configurations at every instant of time, the path of the end‐effector is generated with the help of forward kinematics. In order to generate a feasible trajectory, a collision check procedure is proposed between the links and the obstacle at all time instants of synchronized time during the robot’s operation.
+Figure 12. Schematic sketch of robot positions in its trajectory
+The path that is generated between the robot configurations of the destinations is evaluated for interference/collision of links with the obstacle and is labelled as ‘feasible’ or ‘infeasible’. Cartesian coordinate values of these links L(x, y, z,t) as generated in section 2.3 are compared with the Cartesian coordinate values of the obstacle ( , , )
+ob ob ob
+R x y z ; the difference between these Cartesian values should be greater than 0.01 m (assuming that the maximum thickness of the links of the robot is approximately 0.01 m) along X, Y and Z directions at all time instants. If the difference is less than 0.01 m, it indicates that the link has a contact with the obstacle and the corresponding path is labelled as ‘infeasible’. Otherwise, the collision check procedure will be evaluated for the next time instant and this process will
+be continued throughout the synchronized execution time PQ
+sync
+T . The successful path in the collision check will be labelled as ‘feasible’. In order to reduce the algorithm’s computational effort, once collision is detected at any time instant, the proposed algorithm will exit immediately from the time loop, avoiding unwanted computations. Path no. 62, presented in section 3.5, has been labelled as ‘infeasible’ after the collision check, i.e., the robot makes contact with the obstacle during its motion along this path. All paths are evaluated and labelled in this way. Table 12 provides the execution time, maximum jerk and feasibility status of 64 paths generated by the algorithm.
+3.5.8 Selection of best feasible path and configurations
+It is found that 48 feasible solutions (paths) are available among 64 solutions. The best feasible solution is selected based on minimum execution time and minimum jerk value. The path number 16 with pick‐and‐place configurations, P2 and Q8 respectively, whose path time of 2.513 sec and minimum of maximum jerk value of 6.151 rad/sec3 represent the best solution for the input given in section 3.1. This is the only path with both minimum time and minimum jerk value. The torque values have been calculated using Robotics Toolbox [31] to understand the dynamic behaviour of this proposed trajectory for the feasible paths.
+Table 11. Results of the algorithm for 64 possible paths from Cartesian space description
+Figure 13 depicts the corresponding trajectories of displacement, velocity, acceleration, jerk and torque for the optimal solution, i.e., trajectories for all the joints of PUMA 560 robot during its motion along path no. 16 with configuration P2 and Q8.
+3.6 Generation of feasible trajectories with via‐point
+When all the 64 paths become ‘infeasible’ for the particular input, stage two of the planner searches for feasible path(s) between the pick and place destinations with a via‐point.
+In order to illustrate the above case, the data on the endeffector given in Table 12 have been considered without any change in robot link parameters and using kinematic limits as specified in Tables 2 and 3.
+11
+S. Saravana Perumaal and N. Jawahar: Automated Trajectory Planner of Industrial Robot for Pick-and-Place Task
+www.intechopen.com
+
+
+Figure 13. STST of PUMA 560 for the optimal path (path no. 16) among 64 paths: a) Displacement, b) Velocity, c) Acceleration, d) Jerk e) Torque
+Table 12. Position and orientation of the end‐effector in Cartesian space
+The obstacle that is considered is a cube of side 0.4 m with one of its base corner is located at a distance 0.2 m, 0 m and 0.8 m from the robot base in Cartesian space. For the above‐given input to the algorithm, initially the following steps are executed as per the procedures presented in section 3.2 to 3.5 and the results of stage one. After evaluating 64 paths in collision check, it is found that all the paths are labelled as ‘infeasible’; this shows that along all the 64 paths the robot’s links collide with the obstacle.
+3.6.1 Selection of the via point for feasible trajectory generation
+Under circumstances where all 64 paths generated from the Cartesian description of the end‐effector fail, a viapoint ‘V’ is needed to obtain a feasible path. The following procedure is proposed in this work to select a ‘via‐point’ ‘V’ in the robot’s dexterous workspace to generate a collision‐free path.
+3.6.1.1 Generation of forbidden sphere
+The work proposes a ‘forbidden sphere’ technique for the selection of via‐point to generate a feasible trajectory. A forbidden enclosing sphere connecting the corners of cube (the obstacle) is developed which encapsulates the obstacle. The centre of the forbidden sphere  
+,,
+c c cc
+Pxyz and its radius ‘ rf ’ are calculated from  
+,,
+r r rr
+P x y z , the Cartesian position of the reference base corner of the cube, and are given as in (42), (43) (44) and (45):
+/2
+cr
+x  x  a (42)
+/2
+cr
+y  y  a (43)
+/2
+cr
+z  z  a (44)
+3 4
+rf  a (45)
+The points on the surface of the forbidden sphere (, ,)
+f ff
+x y z are calculated using its spherical coordinates
+
+,,
+ff f
+r   , and their corresponding expressions are given in (46), (47) and (48):
+sin cos
+f cf f f
+x  x  r   (46)
+sin sin
+f cf f f
+y  y  r   (47)
+cos
+f cf f
+z  z  r  (48)
+where 0 f  and 0 2
+f  
+3.6.1.2 Generation of via‐point sphere
+A set of three via‐point spheres concentric to the forbidden sphere (sphere encompasses the obstacle) has been constructed to facilitate the selection of a via‐point which emulates the workspace of the articulated robotic manipulator (a partial sphere in shape). Figure 14 depicts the arrangement of forbidden sphere and via‐point sphere (only one via‐point sphere has been shown for ease of understanding). A via‐point sphere is generated from the centre of the forbidden sphere, i.e.,  
+,,
+c c cc
+P x y z and its calculated radius ‘ rv ’, as given in (49):
+vf
+r  r  offset (49)
+12 Int J Adv Robotic Sy, 2013, Vol. 10, 100:2013 www.intechopen.com
+
+
+Figure 14. Via‐point generation for obstacle avoidance
+Two more via‐point spheres are generated with the multiples of the same offset distances. Offset value is selected in such a way that the via‐point spheres fall in the robot’s dexterous workspace. Each sphere has been discretized to have 200 Cartesian coordinate points. All the points on the via‐point spheres are stored as (, ,)
+v vv
+R x y z , the pool of points for via‐point selection. The trajectory planner selects a via‐point randomly as required from a look‐up table ( , , )
+v vv
+R x y z . This selected via‐point is considered as the Cartesian position of the end‐effector and its orientation is assumed to be the average of the orientations at the pick‐and‐place destination. Position and orientation form the required transformation matrix which provides the Cartesian description at ‘V’. Table 13 presents the position and orientation of one such selected via‐point and its corresponding transformation matrix. Similar to pickand‐place destinations, the possible configurations at a selected via‐point destination is given in Table 14.
+Table 13. Position and orientation of the end‐effector for the selected via‐point
+Table 14. All eight possible robot configurations at via destination
+3.6.2 Calculation of execution time for trajectory with via‐point
+There are two STSTs in which the first trajectory is generated between pick and via‐point destinations, and another trajectory between the via‐point and place destinations. Each of these trajectories has an acceleration, constant velocity and deceleration phase, and the
+corresponding time for each trajectory has been calculated as specified in section 3.5.3. The sum of time required for these trajectories is the time required for the execution of the pick‐and‐place operation and is calculated as in (50):
+PQ PV VQ sync sync sync
+T  T  T (50)
+In this case, the time for the trajectory between pick and place, PQ
+sync
+T , depends on the location of via‐point ‘V’.
+3.6.3 Generation of trajectories with via‐point and evaluation of paths for feasibility
+By considering all possible configurations at ‘V’, the resultant 512 (8x8x8) paths are generated by this algorithm connecting pick, via and place destinations. These paths are in turn evaluated for collision, as specified in section 3.5.7, and the feasible path(s) is/are identified. Table 15 provides the execution time, jerk and feasibility status of 512 paths generated by the algorithm.
+Table 15. Results for 512 paths for the given inputs
+3.6.4 Selection of best feasible path and configurations
+The least time‐consuming path with minimum jerk is selected as the optimal path interpolating pick, via and place destinations. For the above‐given input data, the minimum execution time is calculated as 5.03 seconds, which is achieved in 321 instances out of 512. The path number 434 with respective pick, via and place configurations P7, V7 and Q2, and the path number 505 with respective pick, via and place configurations P8, V8 and Q1, whose minimum jerk limit was 12.872 rad/sec3 and minimum path time 5.03 sec, are the best solutions for the given inputs. These paths show the lowest time and jerk values among all other feasible paths.
+Figure 15 and Figure 16 depict the corresponding trajectories of displacement, velocity, acceleration, jerk and torque for the optimal solutions, i.e., trajectories for all the joints of the PUMA 560 robot during its motion along the paths 434 and 505, respectively.
+13
+S. Saravana Perumaal and N. Jawahar: Automated Trajectory Planner of Industrial Robot for Pick-and-Place Task
+www.intechopen.com
+
+
+Figure 15. STST of PUMA 560 for one of the optimal solutions, i.e., path no. 434 among 512 paths: a) Displacement, b) Velocity, c) Acceleration, d) Jerk, e) Torque
+When it fails to obtain a feasible path, the algorithm selects another via‐point randomly from ( , , )
+v vv
+R x y z and identification of feasible paths will be carried out again. This procedure will be continued until a feasible path is obtained. The proposed algorithm has the difficulty of ensuring the optimal path; also, it is assumed that the orientation at via‐point is the average of the orientation of destinations, which may not ensure the best configuration at via‐point.
+Figure 16. STST of PUMA 560 for one of the optimal solutions, i.e., path no. 505 of 512 paths: a) Displacement, b) Velocity, c) Acceleration, d) Jerk, e) Torque
+4. Results and Discussion
+This section first discusses the performance of the proposed S‐curve trajectory generated with the sine wave form of the jerk profile by comparing the cubic spline trajectory with the constant jerk profile presented by Chettibi et al. [1] for the weighted cost function, giving a relative importance to minimizing transfer time and joint efforts or power.
+The results given in [1], with the various weighting coefficients of transfer time function  and joint efforts between 1 and 0, are used for the comparison. Table 16
+14 Int J Adv Robotic Sy, 2013, Vol. 10, 100:2013 www.intechopen.com
+
+
+compares the performance of the proposed algorithm with the results presented in [1]. It reveals that the proposed trajectory performs better than the cubic spline trajectory when joint efforts are given more weightage than the execution time. Hence, this S‐curve trajectory can be implemented in applications where smoothness in object handling is of great significance, to ensure motion with less vibration.
+Table 16. Performance comparison of proposed STST
+Secondly, the performance is tested for the situations that require a via‐point to provide a collision‐free trajectory. In order to check the influence of via‐point on the optimality of the solution, six experiments, with the same input as used in stage two (trajectory with via‐point) (section 3.0), are conducted with via‐points selected around the obstacle. Table 17 shows the results.
+It can be observed that certain points lead to infeasible solutions and the jerk values for the optimal solution vary with via‐point. It can also be seen that there are solutions with the same minimum execution time but they different minimum jerk value, based on the location of the via‐point.
+Although execution time is the same for the optimal solutions at various locations of via‐point, a differentiation in the jerk values can also be observed in the results. A method is therefore required to identify the best via‐point in the dexterous workspace for achieving the optimal solution with both the minimum jerk and time.
+Table 17. Results of the experiments on the search algorithm for various via‐points
+It can also be observed that the jerk, acceleration and velocity profiles are similar for alternate optimal solutions (Figure 15 and Figure 16) of the algorithm, although there will be changes in robot pose. With variations in the location of the via‐point, the algorithm provides the better solution as illustrated and sometimes provides infeasible solutions as well.
+5. Conclusion
+An automated trajectory planner for near‐optimal trajectory of 6‐DOF robotic manipulators for the given Cartesian description of end‐effector at pick and place destinations under kinematic constraints has been described in this work. Li et al.’s (2007) accelerationbounded S‐curve trajectory is modified as a jerk‐bounded S‐curve trajectory (i.e., all trajectories, displacement, velocity and acceleration, are generated within the specified maximum jerk value) so as to obtain a smoother movement without any abrupt changes. A mathematical model with the objective of minimum execution time for pick‐and‐place operations is formulated by including a ‘forbidden sphere’ technique to avoid obstacles and a jerk‐bounded synchronized trigonometric S‐curve trajectory to ensure smooth motion. A two‐stage algorithm to find the optimal trajectory with or without via‐point is proposed. The performance of the proposed trajectory planner is analysed through comparison with the results of [1]. This reveals that the proposed S‐curve trajectory is smoother than the cubic spline trajectory. Also, the proposed STST provides better results when joint efforts are considered with higher priority than execution time. Further, the possibility to set maximum bounds for the jerk before executing the trajectory allows for a large stability and safety margin. Since the proposed algorithm ensures that the jerk of the resulting trajectory will be kept under the limit values set a priori by the user, the resulting vibrations will also be kept low. Hence, the S‐curve trajectory is suitable for applications in which smoothness (low vibration) in object handling is of great significance. The proposed planner is able to handle the trajectory with and without via‐point and traces the smooth, collision‐free, near‐time‐optimal trajectory. The collision‐free trajectory is ensured not only for the robot’s end‐effector but also for its links. The performance test carried out for the situations requiring a via‐point to provide a collision‐free trajectory indicates that the optimal solutions with different via‐points are the same for minimum time, but differ in terms of jerk values. This requires searches with many via‐points in the dexterous
+15
+S. Saravana Perumaal and N. Jawahar: Automated Trajectory Planner of Industrial Robot for Pick-and-Place Task
+www.intechopen.com
+
+
+space for a smooth and minimum‐time trajectory. A method for identifying suitable via‐points to obtain the optimal solution quickly is therefore required. This work has also considered the enumeration technique to identify the minimal robot execution time with all possible configurations of pick, via and place destinations in the dexterous workspace – this is computationally difficult and huge amounts of data are involved. Future work will be devoted to extending this algorithm to find out the optimal via‐point by means of suitable intelligent heuristics. This work has considered a single objective function, minimization of execution time which can be extended with more than one objective function, such as minimization of time and jerk and minimization of time and energy.
+6. Acknowledgements
+The authors thank the Management of Thiagarajar College of Engineering for their co‐operation and encouragement, and the use of all the facilities needed to carry out this work. The authors are also very thankful to anonymous referees for valuable suggestions and comments that helped to improve the quality of this work.
+7. References
+[1] Chettibi T, Lehtihet H E, Haddad M, Hanchi S (2004) Minimum cost trajectory planning for industrial robots. Eur. J. Mech A Solids, 23: 703–715. [2] Macfarlane S, Croft E (2003) Jerk‐bounded manipulator trajectory planning design for real‐time applications. IEEE Trans. on Robot. Autom., 19: 42‐52. [3] Saramago S F P, Steffen V Jr (2000) Optimal Trajectory Planning of Robot Manipulators in the Presence of Moving Obstacles. Mech. Mach. Theory, 35(8): 10791094. [4] Gasparetto A, Zanotto V (2007) A new method for smooth trajectory planning of robot manipulators. Mech. Mach. Theory, 42(4): 455–471. [5] Saravanan R, Ramabalan S, Balamurugan C (2008) Evolutionary collision‐free optimal trajectory planning for intelligent robots. Int. J. Adv. Manuf. Tech., 36: 1234–1251. [6] Kyriakopoulos K J, Saridis G N (1988) Minimum jerk path generation. Proc. IEEE Int. Conf. on Robot. Autom., Philadelphia, 364–369. [7] Jeon J W (1995) An efficient acceleration for fast motion of industrial robots. Proc. 1995 IEEE Int. Conf. Industrial Electronics, Control and Instrumentation, Part 2, 1336‐1341. [8] Piazzi A, Visioli A (2000) Global minimum‐jerk trajectory planning of robot manipulators. IEEE Trans. Ind. Electron. 47: 140–149.
+[9] Craig J (2005) Introduction to Robotics: Mechanics and Control. Third ed., Pearson Prentice‐Hall, New Delhi. [10] Constantinescu D, Croft E A (2000) Smooth and timeoptimal trajectory planning for industrial manipulators along specified paths. J. Robot. Syst., 17(5): 233–249. [11] Kahn M E, Roth B (1971) The near‐minimum‐time control of open‐loop articulated kinematic chains. J. Dyn. Syst. T. ASME. 93: 164–172. [12] Geering H P, Guzzella L, Hepner S A R, Onder C H (1986) Time optimal motions of robots in assembly tasks. IEEE Trans. Autom. Control., AC‐31: 512–518 [13] Bobrow J, Dobowsky S Gibson J (1985) Time‐optimal control of robotic manipulators along specified path. Int. J. Robot. Res., 4(3): 3‐17. [14] Shin K, McKay N (1985) Minimum‐time control of robotic manipulators with geometric path constraints. IEEE Trans. Autom. Control. 30: 531‐41. [15] Chen Y, Desrochers A (1989) Structure of minimumtime control law for robotic manipulators with constrained paths. Proc. IEEE Int. Conf. Robot. Autom., 971–976. [16] Kieffer J, Cahill A J, James M R (1997) Robust and accurate time‐optimal path‐tracking control for robot manipulators. IEEE Trans. Robot. Autom., 13: 880890. [17] Gasparetto A, Zanotto V (2008) A technique for timejerk optimal planning of robot trajectories. Robot. CIM‐Int. Manuf., 24: 415–426. [18] Lin C S, Chang P R, Luh J Y S (1983) Formulation and optimization of cubic polynomial joint trajectories for industrial robots. IEEE Trans. Autom. Control, 28 (12): 1066–1073. [19] Chand S, Doty K (1985) Online polynomial trajectories for robot manipulators. Int. J. Robot. Res., 4: 38–48. [20] Wang C H, Horng J G (1990) Constrained minimumtime path planning for robot manipulators via virtual knots of the cubic B‐Spline functions. IEEE Trans. Autom. Control., 35: 573–577. [21] Chen Y C (1991) Solving Robot Trajectory Planning Problems with Uniform Cubic B‐Splines. Optim. Contr. Appl. Methods., 12: 247–262. [22] Jamhour E, André P J (1996) Planning smooth trajectories along parametric paths. Mathematics and Computers in Simulation, 41: 615–626. [23] Saramago S F P, Steffen V Jr. (1998) Optimization of the Trajectory Planning of Robot Manipulators taking into account the Dynamics of the System. Mech. Mach. Theory., 33(7): 883–894. [24] Martin B J, Bobrow J E (1999) Minimum effort motions for open chain manipulators with taskdependent end‐effector constraints. Int. J. Robot. Res., 18(2): 213–224.
+16 Int J Adv Robotic Sy, 2013, Vol. 10, 100:2013 www.intechopen.com
+
+
+[25] Cao B, Dodds G I (1994) Time‐optimal and smooth joint path generation for robot manipulators. Proc. IEEE Int. Conf. Robot. Autom., 1853–1858. [26] Simon D, Isik C (1993) A trigonometric trajectory generator for robotic arms. Int. J. Control, 57(3): 505517. [27] Piazzi A, Visioli A (1998) Global minimum‐time trajectory planning of mechanical manipulators using interval analysis. Int. J. Control, 71(4): 631–652. [28] Visioli A (2000) Trajectory planning of robot manipulators by using algebraic and trigonometric splines. Robotica, 18: 611‐631. [29] Dyllong E, Visioli A (2003) Planning and real‐time modifications of a trajectory using spline techniques. Robotica, 21: 475‐482. [30] Dyllong E, Komainda A (2001) Local path modifications of heavy load manipulators. Proc.
+IEEE/ASME Int. Conf. on Advanced Intelligent Mechatronics, Como, Italy, 464–469. [31] Tsay D M, Lin C F (2005) Asymmetrical inputs for minimizing residual response, IEEE Int. Conf. on Mechatronics, Taipei, Taiwan, 235–240. [32] Nguyen K D, Ng T C, Chen I M (2008) On algorithms for planning s‐curve motion profiles, Int. J. Adv. Robot. Syst., 5(1): 99–106. [33] Li H Z, Gong Z M, Lin W, Lippa T (2007) Motion profile planning for reduced jerk and vibration residuals. SIMTech technical reports Jan.–Mar., 8(1): 32–37. [34] Fu K S, Gonazalez R C, Lee C S G, (2008) Robotics Control, Sensing, Vision and Intelligence, Tata McGraw‐Hill Edition, India. [35] Corke P (1996) A robotics toolbox for MATLAB. IEEE Robot. Autom. Mag., 3: 24–32.
+17
+S. Saravana Perumaal and N. Jawahar: Automated Trajectory Planner of Industrial Robot for Pick-and-Place Task
+www.intechopen.com

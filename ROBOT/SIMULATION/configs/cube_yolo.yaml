@@ -1,0 +1,21 @@
+# cube_yolo.yaml
+# YOLOv10 dataset configuration for SO-ARM100 green cube detection
+#
+# Usage (from SIMULATION/):
+#   yolo train model=yolov10n.pt data=configs/cube_yolo.yaml epochs=50 imgsz=320 batch=32
+#
+# Or with YOLOv10-small for higher accuracy at the cost of speed:
+#   yolo train model=yolov10s.pt data=configs/cube_yolo.yaml epochs=50 imgsz=320 batch=16
+
+# Paths are relative to the CWD when running `yolo train` (i.e. SIMULATION/)
+path:   .               # dataset root = SIMULATION/  (run yolo from SIMULATION/)
+train:  data/cube_yolo/images/train
+val:    data/cube_yolo/images/val
+
+# Class definitions
+nc: 1                   # number of classes
+names:
+  0: cube               # the green target cube
+
+# Optional: augmentation hints (increase robustness to lighting variation)
+# These are passed via CLI: e.g. yolo train ... hsv_h=0.02 hsv_s=0.5 hsv_v=0.4

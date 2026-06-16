@@ -1,0 +1,42 @@
+{
+  "os":  "macOS-15.7.3-arm64-arm-64bit-Mach-O",
+  "python":  "CPython 3.13.11",
+  "startedAt":  "2026-03-04T09:47:48.659435Z",
+  "args":  [
+    "--policy.path=masato-ka/SO100_act_generalize_pick_pos_smolvla_40k",
+    "--dataset.repo_id=lerobot/svla_so101_pickplace",
+    "--batch_size=64",
+    "--steps=20000",
+    "--output_dir=outputs/train/my_smolvla2",
+    "--job_name=my_smolvla_training",
+    "--policy.device=cuda",
+    "--wandb.enable=true",
+    "--rename_map={\"observation.images.side\": \"observation.images.front\", \"observation.images.up\": \"observation.images.wrist.right\"}"
+  ],
+  "program":  "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/scripts/lerobot_train.py",
+  "codePath":  "lerobot/src/lerobot/scripts/lerobot_train.py",
+  "codePathLocal":  "lerobot/src/lerobot/scripts/lerobot_train.py",
+  "root":  "outputs/train/my_smolvla2",
+  "host":  "AMAFJDJF06J6K",
+  "executable":  "/Users/christelle.nollet/miniconda3/bin/python",
+  "cpu_count":  10,
+  "cpu_count_logical":  10,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "120530395136"
+    }
+  },
+  "memory":  {
+    "total":  "34359738368"
+  },
+  "apple":  {
+    "name":  "Apple M1 Pro",
+    "ecpuCores":  2,
+    "pcpuCores":  8,
+    "gpuCores":  16,
+    "memoryGb":  32,
+    "ramTotalBytes":  "34359738368"
+  },
+  "writerId":  "yx6ie8tm66eh7czb24dp546szkh6rdr9"
+}

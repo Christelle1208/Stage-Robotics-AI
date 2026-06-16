@@ -1,0 +1,30 @@
+# SO-100 reaching task — environment config
+# Coordinate system: robot faces negative-y direction (from Menagerie scene).
+# Reachable workspace approx: x in [-0.20, 0.20], y in [-0.35, 0.0], z in [0.0, 0.25]
+
+env_id: SO100Reach-v0
+# Uses the Menagerie's own scene.xml as the base (correct meshdir resolution).
+# The ee_site and target_site are injected by the Python env via MjSpec.
+scene_xml: assets/mujoco_menagerie/trs_so_arm100/scene.xml
+max_episode_steps: 200
+render_mode: human  # used by scripts only; gym.make(..., render_mode=None) overrides
+
+control:
+  action_scale: 0.05       # radians per step (position delta)
+  control_mode: joint_delta_position
+
+task:
+  end_effector_site: ee_site      # confirmed site in assets/robots/so100/so_arm100.xml
+  target_site: target_site        # sphere marker added in the scene XML
+  success_threshold: 0.04         # metres
+
+randomization:
+  target_range:
+    x: [-0.10, 0.10]
+    y: [-0.30, -0.10]
+    z: [0.05,  0.18]
+
+reward:
+  distance_weight: 1.0
+  success_bonus: 10.0
+  action_penalty: 0.01

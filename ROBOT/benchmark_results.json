@@ -1,0 +1,212 @@
+{
+  "timestamp": "2026-03-17T17:11:45.486434",
+  "configuration": {
+    "num_episodes": 5,
+    "render": false,
+    "save_videos": false,
+    "verbose": true,
+    "log_actions_every": 25
+  },
+  "xml_path": "SIMULATION/trs_so_arm100/TEST_SCENE.xml",
+  "total_episodes": 15,
+  "models": {
+    "SmolVLA": {
+      "episodes": [
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.010653972625732422,
+          "model_name": "SmolVLA",
+          "task_name": "pick_and_place",
+          "episode_id": 0
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.010371208190917969,
+          "model_name": "SmolVLA",
+          "task_name": "pick_and_place",
+          "episode_id": 1
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.010120868682861328,
+          "model_name": "SmolVLA",
+          "task_name": "pick_and_place",
+          "episode_id": 2
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.01027679443359375,
+          "model_name": "SmolVLA",
+          "task_name": "pick_and_place",
+          "episode_id": 3
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.010161161422729492,
+          "model_name": "SmolVLA",
+          "task_name": "pick_and_place",
+          "episode_id": 4
+        }
+      ],
+      "statistics": {
+        "success_rate": 0.0,
+        "grasp_success_rate": 0.0,
+        "avg_reward": -232.89160568813878,
+        "avg_steps": 250.0,
+        "avg_time": 0.010316801071166993
+      }
+    },
+    "Octo": {
+      "episodes": [
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 39.93957185745239,
+          "model_name": "Octo",
+          "task_name": "pick_and_place",
+          "episode_id": 0
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 32.57804489135742,
+          "model_name": "Octo",
+          "task_name": "pick_and_place",
+          "episode_id": 1
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 32.47256684303284,
+          "model_name": "Octo",
+          "task_name": "pick_and_place",
+          "episode_id": 2
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 32.26466917991638,
+          "model_name": "Octo",
+          "task_name": "pick_and_place",
+          "episode_id": 3
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 33.29072690010071,
+          "model_name": "Octo",
+          "task_name": "pick_and_place",
+          "episode_id": 4
+        }
+      ],
+      "statistics": {
+        "success_rate": 0.0,
+        "grasp_success_rate": 0.0,
+        "avg_reward": -232.89160568813878,
+        "avg_steps": 250.0,
+        "avg_time": 34.10911593437195
+      }
+    },
+    "SAC": {
+      "episodes": [
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.009567975997924805,
+          "model_name": "SAC",
+          "task_name": "pick_and_place",
+          "episode_id": 0
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.008729696273803711,
+          "model_name": "SAC",
+          "task_name": "pick_and_place",
+          "episode_id": 1
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.00941014289855957,
+          "model_name": "SAC",
+          "task_name": "pick_and_place",
+          "episode_id": 2
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.009896993637084961,
+          "model_name": "SAC",
+          "task_name": "pick_and_place",
+          "episode_id": 3
+        },
+        {
+          "success": false,
+          "steps": 250,
+          "total_reward": -232.89160568813875,
+          "grasp_success": false,
+          "placement_success": false,
+          "execution_time": 0.009244918823242188,
+          "model_name": "SAC",
+          "task_name": "pick_and_place",
+          "episode_id": 4
+        }
+      ],
+      "statistics": {
+        "success_rate": 0.0,
+        "grasp_success_rate": 0.0,
+        "avg_reward": -232.89160568813878,
+        "avg_steps": 250.0,
+        "avg_time": 0.009369945526123047
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+"""Train a PPO policy on the SO-100 reaching task.
+
+Usage
+-----
+    python scripts/train_ppo_so100_reach.py
+"""
+
+from so100_mujoco_rl.train.train_sb3 import train
+
+if __name__ == "__main__":
+    train("configs/train/ppo_so100_reach.yaml")

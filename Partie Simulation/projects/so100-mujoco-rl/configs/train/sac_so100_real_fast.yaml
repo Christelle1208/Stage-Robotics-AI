@@ -1,0 +1,26 @@
+# Fast smoke-test config — ~20 minutes on M1 Pro.
+# Goal: verify the reward is rising before committing to a full run.
+# If ep_rew_mean is climbing by 50k steps, the setup is working.
+
+algo: sac
+env_id: SO100RealPickPlace-v0
+total_timesteps: 150000
+seed: 42
+device: cpu               # MPS has overhead; CPU is faster for this network size
+log_dir: outputs/logs/sac_so100_real_fast
+model_dir: outputs/models
+checkpoint_freq: 25000
+
+policy: MlpPolicy
+learning_rate: 0.0003
+buffer_size: 200000       # smaller buffer — enough for 150k steps
+learning_starts: 2000     # start learning after 2k random steps (not 10k)
+batch_size: 256
+tau: 0.005
+gamma: 0.99
+train_freq: 1
+gradient_steps: 1
+ent_coef: auto
+target_update_interval: 1
+verbose: 1
+tensorboard_log: outputs/logs/tensorboard

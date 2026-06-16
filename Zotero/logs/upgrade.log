@@ -1,0 +1,393 @@
+[JavaScript Error: "Error: Failed to load resource://services-settings/remote-settings.sys.mjs"]
+
+While creating services from category 'profile-after-change', could not create service for entry 'RemotePermissionService', contract ID '@mozilla.org/remote-permission-service;1'
+
+[JavaScript Error: "Error: Failed to load resource://services-settings/remote-settings.sys.mjs" {file: "resource://gre/modules/EssentialDomainsRemoteSettings.sys.mjs" line: 41}]
+
+[JavaScript Error: "Error: Failed to load resource://services-settings/remote-settings.sys.mjs" {file: "resource://gre/modules/SimpleURIUnknownSchemesRemoteObserver.sys.mjs" line: 45}]
+
+appName => Zotero, version => 9.0.3 (ARM64), os => macOS 15.7.5, locale => fr-FR, extensions => 
+
+=========================================================
+
+(3)(+0000000): Asynchronously opening database 'zotero'
+
+(3)(+0000000): /Users/christelle.nollet/Zotero/zotero.sqlite
+
+(4)(+0000003): PRAGMA main.locking_mode=EXCLUSIVE
+
+(4)(+0000000): PRAGMA page_size
+
+(4)(+0000000): PRAGMA cache_size=2000
+
+(4)(+0000001): PRAGMA foreign_keys=true
+
+(4)(+0000000): PRAGMA foreign_keys = false
+
+(3)(+0000000): Getting contents of [xpconnect wrapped nsIChannel]
+
+(4)(+0000044): Registering notifier observer 'tab_jf' for [tab]
+
+(4)(+0000175): SELECT 1 FROM itemDataValues WHERE value=0 LIMIT 1
+
+(4)(+0000001): Beginning DB transaction hmqWfA35
+
+(3)(+0000001): Getting contents of [xpconnect wrapped nsIChannel]
+
+(3)(+0000001): Updating custom tables
+
+(4)(+0000000): PRAGMA foreign_keys
+
+(4)(+0000000): SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND tbl_name=? ['customItemTypes']
+
+(4)(+0000000): DELETE FROM itemTypesCombined
+
+(4)(+0000002): DELETE FROM fieldsCombined
+
+(4)(+0000000): DELETE FROM itemTypeFieldsCombined
+
+(4)(+0000001): DELETE FROM baseFieldMappingsCombined
+
+(4)(+0000000): INSERT INTO itemTypesCombined SELECT itemTypeID, typeName, display, 0 AS custom FROM itemTypes UNION SELECT customItemTypeID + 10000 AS itemTypeID, typeName, display, 1 AS custom FROM customItemTypes
+
+(4)(+0000001): INSERT INTO fieldsCombined SELECT fieldID, fieldName, NULL AS label, fieldFormatID, 0 AS custom FROM fields UNION SELECT customFieldID + 10000 AS fieldID, fieldName, label, NULL, 1 AS custom FROM customFields
+
+(4)(+0000000): INSERT INTO itemTypeFieldsCombined SELECT itemTypeID, fieldID, hide, orderIndex FROM itemTypeFields UNION SELECT customItemTypeID + 10000 AS itemTypeID, COALESCE(fieldID, customFieldID + 10000) AS fieldID, hide, orderIndex FROM customItemTypeFields
+
+(4)(+0000001): INSERT INTO baseFieldMappingsCombined SELECT itemTypeID, baseFieldID, fieldID FROM baseFieldMappings UNION SELECT customItemTypeID + 10000 AS itemTypeID, baseFieldID, customFieldID + 10000 AS fieldID FROM customBaseFieldMappings
+
+(3)(+0000000): Getting contents of [xpconnect wrapped nsIChannel]
+
+(3)(+0000001): Updating user data tables from version 123 to 125
+
+(4)(+0000000): ALTER TABLE itemAttachments ADD COLUMN lastRead INT
+
+(4)(+0000001): CREATE INDEX itemAttachments_lastRead ON itemAttachments(lastRead)
+
+(4)(+0000001): ALTER TABLE libraries ADD COLUMN isAdmin INT NOT NULL DEFAULT 0
+
+(4)(+0000001): UPDATE groups SET version = 0
+
+(4)(+0000000): REPLACE INTO version (schema,version) VALUES (?,?) ['userdata', 125]
+
+(4)(+0000003): SELECT version FROM version WHERE schema='triggers'
+
+(3)(+0000000): Getting contents of [xpconnect wrapped nsIChannel]
+
+(3)(+0000000): Updating custom tables
+
+(4)(+0000000): PRAGMA foreign_keys
+
+(4)(+0000001): DELETE FROM itemTypesCombined
+
+(4)(+0000000): DELETE FROM fieldsCombined
+
+(4)(+0000000): DELETE FROM itemTypeFieldsCombined
+
+(4)(+0000000): DELETE FROM baseFieldMappingsCombined
+
+(4)(+0000000): INSERT INTO itemTypesCombined SELECT itemTypeID, typeName, display, 0 AS custom FROM itemTypes UNION SELECT customItemTypeID + 10000 AS itemTypeID, typeName, display, 1 AS custom FROM customItemTypes
+
+(4)(+0000000): INSERT INTO fieldsCombined SELECT fieldID, fieldName, NULL AS label, fieldFormatID, 0 AS custom FROM fields UNION SELECT customFieldID + 10000 AS fieldID, fieldName, label, NULL, 1 AS custom FROM customFields
+
+(4)(+0000000): INSERT INTO itemTypeFieldsCombined SELECT itemTypeID, fieldID, hide, orderIndex FROM itemTypeFields UNION SELECT customItemTypeID + 10000 AS itemTypeID, COALESCE(fieldID, customFieldID + 10000) AS fieldID, hide, orderIndex FROM customItemTypeFields
+
+(4)(+0000001): INSERT INTO baseFieldMappingsCombined SELECT itemTypeID, baseFieldID, fieldID FROM baseFieldMappings UNION SELECT customItemTypeID + 10000 AS itemTypeID, baseFieldID, customFieldID + 10000 AS fieldID FROM customBaseFieldMappings
+
+(4)(+0000007): Committed DB transaction hmqWfA35
+
+(3)(+0000000): Checking database schema integrity
+
+(4)(+0000000): SELECT COUNT(*) FROM fieldsCombined
+
+(4)(+0000000): SELECT COUNT(*) FROM itemTypeFieldsCombined
+
+(4)(+0000000): SELECT itemTypeID FROM itemTypes WHERE typeName='attachment'
+
+(4)(+0000000): SELECT itemTypeID FROM itemTypes WHERE typeName='note'
+
+(4)(+0000000): SELECT itemTypeID FROM itemTypes WHERE typeName='annotation'
+
+(4)(+0000000): SELECT CASE type WHEN 'table' THEN 'table:' || tbl_name WHEN 'index' THEN 'index:' || name WHEN 'trigger' THEN 'trigger:' || name END FROM sqlite_master WHERE type IN ('table', 'index', 'trigger')
+
+(3)(+0000001): Getting contents of [xpconnect wrapped nsIChannel]
+
+(4)(+0000001): PRAGMA foreign_key_check
+
+(4)(+0000079): SELECT COUNT(*) > 0 FROM items WHERE itemTypeID IS NULL
+
+(4)(+0000002): SELECT COUNT(*) > 0 FROM itemAttachments JOIN items USING (itemID) WHERE itemTypeID != 3
+
+(4)(+0000000): SELECT COUNT(*) > 0 FROM itemData WHERE fieldID NOT IN (SELECT fieldID FROM itemTypeFieldsCombined WHERE itemTypeID=(SELECT itemTypeID FROM items WHERE itemID=itemData.itemID))
+
+(4)(+0000002): SELECT COUNT(*) > 0 FROM items WHERE itemTypeID=3 AND itemID NOT IN (SELECT itemID FROM itemAttachments)
+
+(4)(+0000001): SELECT COUNT(*) > 0 FROM items WHERE itemTypeID=1 AND itemID NOT IN (SELECT itemID FROM itemAnnotations)
+
+(4)(+0000000): SELECT COUNT(*) > 0 FROM itemAttachments WHERE parentItemID IN (SELECT itemID FROM items WHERE itemTypeID=28) AND linkMode != 4
+
+(4)(+0000000): SELECT COUNT(*) > 0 FROM itemAttachments WHERE parentItemID IN (SELECT itemID FROM items WHERE itemTypeID IN (3, 1))
+
+(4)(+0000000): SELECT COUNT(*) > 0 FROM itemNotes WHERE parentItemID IN (SELECT itemID FROM items WHERE itemTypeID IN (28, 3, 1))
+
+(4)(+0000000): SELECT COUNT(*) > 0 FROM creators WHERE firstName='' AND lastName=''
+
+(4)(+0000000): SELECT COUNT(*) > 0 FROM fulltextItemWords WHERE itemID NOT IN (SELECT itemID FROM items WHERE itemTypeID=3)
+
+(4)(+0000014): SELECT COUNT(*) > 0 FROM fulltextItems WHERE itemID NOT IN (SELECT itemID FROM items WHERE itemTypeID=3)
+
+(4)(+0000000): SELECT COUNT(*) > 0 FROM itemAttachments WHERE linkMode NOT IN (0,1,2,3,4)
+
+(4)(+0000000): SELECT COUNT(*) > 0 FROM creators WHERE fieldMode = 1 AND firstName != ''
+
+(4)(+0000000): SELECT COUNT(*) > 0 FROM settings WHERE setting='account' AND key='userID' AND TYPEOF(value)='text'
+
+(4)(+0000000): SELECT collectionID, parentCollectionID FROM collections
+
+(4)(+0000001): DELETE FROM settings WHERE setting='db' AND key='integrityCheck'
+
+(4)(+0000000): Beginning DB transaction jiy6FXcQ
+
+(3)(+0000000): Updating global schema to version 42
+
+(4)(+0000000): SELECT COALESCE(MAX(collectionID) + 1, 1) FROM collections
+
+(4)(+0000000): SELECT COALESCE(MAX(creatorID) + 1, 1) FROM creators
+
+(4)(+0000000): SELECT COALESCE(MAX(creatorTypeID) + 1, 1) FROM creatorTypes
+
+(4)(+0000000): SELECT COALESCE(MAX(customFieldID) + 1, 1) FROM customFields
+
+(4)(+0000001): SELECT COALESCE(MAX(customItemTypeID) + 1, 1) FROM customItemTypes
+
+(4)(+0000000): SELECT COALESCE(MAX(fieldID) + 1, 1) FROM fields
+
+(4)(+0000000): SELECT COALESCE(MAX(valueID) + 1, 1) FROM itemDataValues
+
+(4)(+0000000): SELECT COALESCE(MAX(itemTypeID) + 1, 1) FROM itemTypes
+
+(4)(+0000000): SELECT COALESCE(MAX(itemID) + 1, 1) FROM items
+
+(4)(+0000000): SELECT COALESCE(MAX(libraryID) + 1, 1) FROM libraries
+
+(4)(+0000000): SELECT COALESCE(MAX(proxyID) + 1, 1) FROM proxies
+
+(4)(+0000000): SELECT COALESCE(MAX(savedSearchID) + 1, 1) FROM savedSearches
+
+(4)(+0000000): SELECT COALESCE(MAX(tagID) + 1, 1) FROM tags
+
+(4)(+0000000): SELECT itemTypeID AS id, typeName AS name FROM itemTypes
+
+(4)(+0000000): SELECT fieldID AS id, fieldName AS name FROM fields
+
+(4)(+0000001): SELECT creatorTypeID AS id, creatorType AS name FROM creatorTypes
+
+(4)(+0000001): DELETE FROM itemTypeFields
+
+(4)(+0000001): DELETE FROM baseFieldMappings
+
+(4)(+0000000): DELETE FROM itemTypeCreatorTypes
+
+(4)(+0000001): INSERT INTO itemTypeFields VALUES (2, 1, 0, 0), (2, 2, 0, 1), (2, 3, 0, 2), (2, 5, 0, 3), (2, 6, 0, 4), (2, 7, 0, 5), (2, 8, 0, 6), (2, 9, 0, 7), (2, 10, 0, 8), (2, 11, 0, 9), (2, 12, 0, 10), (2, 13, 0, 11), (2, 14, 0, 12), (2, 15, 0, 13), (2, 16, 0, 14), (2, 17, 0, 15), (2, 18, 0, 16), (2, 19, 0, 17), (3, 1, 0, 0), (3, 11, 0, 1), (3, 10, 0, 2), (4, 1, 0, 0), (4, 2, 0, 1), (4, 20, 0, 2), (4, 21, 0, 3), (4, 22, 0, 4), (4, 23, 0, 5), (4, 24, 0, 6), (4, 26, 0, 7), (4, 6, 0, 8), (4, 27, 0, 9), (4, 28, 0, 10), (4, 8, 0, 11), (4, 9, 0, 12), (4, 10, 0, 13), (4, 11, 0, 14), (4, 12, 0, 15), (4, 13, 0, 16), (4, 14, 0, 17), (4, 15, 0, 18), (4, 16, 0, 19), (4, 17, 0, 20), (4, 18, 0, 21), (4, 19, 0, 22), (5, 1, 0, 0), (5, 2, 0, 1), (5, 29, 0, 2), (5, 31, 0, 3), (5, 32, 0, 4), (5, 33, 0, 5), (5, 34, 0, 6), (5, 36, 0, 7), (5, 38, 0, 8), (5, 39, 0, 9), (5, 6, 0, 10), (5, 8, 0, 11), (5, 9, 0, 12), (5, 10, 0, 13), (5, 11, 0, 14), (5, 14, 0, 15), (5, 15, 0, 16), (5, 18, 0, 17), (5, 19, 0, 18), (6, 1, 0, 0), (6, 2, 0, 1), (6, 40, 0, 2), (6, 42, 0, 3), (6, 6, 0, 4), (6, 8, 0, 5), (6, 9, 0, 6), (6, 10, 0, 7), (6, 11, 0, 8), (6, 44, 0, 9), (6, 14, 0, 10), (6, 15, 0, 11), (6, 18, 0, 12), (6, 19, 0, 13), (7, 1, 0, 0), (7, 2, 0, 1), (7, 45, 0, 2), (7, 46, 0, 3), (7, 22, 0, 4), (7, 23, 0, 5), (7, 47, 0, 6), (7, 6, 0, 7), (7, 25, 0, 8), (7, 26, 0, 9), (7, 48, 0, 10), (7, 49, 0, 11), (7, 50, 0, 12), (7, 51, 0, 13), (7, 52, 0, 14), (7, 28, 0, 15), (7, 8, 0, 16), (7, 9, 0, 17), (7, 10, 0, 18), (7, 11, 0, 19), (7, 44, 0, 20), (7, 12, 0, 21), (7, 13, 0, 22), (7, 14, 0, 23), (7, 15, 0, 24), (7, 16, 0, 25), (7, 17, 0, 26), (7, 18, 0, 27), (7, 19, 0, 28), (8, 1, 0, 0), (8, 2, 0, 1), (8, 53, 0, 2), (8, 45, 0, 3), (8, 46, 0, 4), (8, 22, 0, 5), (8, 23, 0, 6), (8, 47, 0, 7), (8, 6, 0, 8), (8, 25, 0, 9), (8, 26, 0, 10), (8, 48, 0, 11), (8, 49, 0, 12), (8, 50, 0, 13), (8, 51, 0, 14), (8, 35, 0, 15), (8, 28, 0, 16), (8, 8, 0, 17), (8, 9, 0, 18), (8, 10, 0, 19), (8, 11, 0, 20), (8, 44, 0, 21), (8, 12, 0, 22), (8, 13, 0, 23), (8, 14, 0, 24), (8, 15, 0, 25), (8, 16, 0, 26), (8, 17, 0, 27), (8, 18, 0, 28), (8, 19, 0, 29), (9, 54, 0, 0), (9, 2, 0, 1), (9, 55, 0, 2), (9, 56, 0, 3), (9, 57, 0, 4), (9, 58, 0, 5), (9, 59, 0, 6), (9, 60, 0, 7), (9, 39, 0, 8), (9, 8, 0, 9), (9, 9, 0, 10), (9, 10, 0, 11), (9, 11, 0, 12), (9, 14, 0, 13), (9, 15, 0, 14), (9, 18, 0, 15), (9, 19, 0, 16), (10, 1, 0, 0), (10, 2, 0, 1), (10, 21, 0, 2), (10, 61, 0, 3), (10, 6, 0, 4), (10, 62, 0, 5), (10, 63, 0, 6), (10, 26, 0, 7), (10, 64, 0, 8), (10, 18, 0, 9), (10, 9, 0, 10), (10, 10, 0, 11), (10, 11, 0, 12), (10, 8, 0, 13), (10, 28, 0, 14), (10, 12, 0, 15), (10, 13, 0, 16), (10, 16, 0, 17), (10, 17, 0, 18), (10, 14, 0, 19), (10, 19, 0, 20), (11, 1, 0, 0), (11, 2, 0, 1), (11, 65, 0, 2), (11, 66, 0, 3), (11, 25, 0, 4), (11, 26, 0, 5), (11, 6, 0, 6), (11, 7, 0, 7), (11, 22, 0, 8), (11, 67, 0, 9), (11, 23, 0, 10), (11, 35, 0, 11), (11, 45, 0, 12), (11, 46, 0, 13), (11, 8, 0, 14), (11, 28, 0, 15), (11, 9, 0, 16), (11, 10, 0, 17), (11, 11, 0, 18), (11, 44, 0, 19), (11, 12, 0, 20), (11, 13, 0, 21), (11, 14, 0, 22), (11, 15, 0, 23), (11, 16, 0, 24), (11, 17, 0, 25), (11, 18, 0, 26), (11, 19, 0, 27), (12, 1, 0, 0), (12, 2, 0, 1), (12, 68, 0, 2), (12, 43, 0, 3), (12, 61, 0, 4), (12, 6, 0, 5), (12, 69, 0, 6), (12, 70, 0, 7), (12, 51, 0, 8), (12, 8, 0, 9), (12, 9, 0, 10), (12, 10, 0, 11), (12, 11, 0, 12), (12, 12, 0, 13), (12, 13, 0, 14), (12, 14, 0, 15), (12, 15, 0, 16), (12, 16, 0, 17), (12, 17, 0, 18), (12, 18, 0, 19), (12, 19, 0, 20), (13, 1, 0, 0), (13, 2, 0, 1), (13, 71, 0, 2), (13, 45, 0, 3), (13, 46, 0, 4), (13, 22, 0, 5), (13, 23, 0, 6), (13, 47, 0, 7), (13, 6, 0, 8), (13, 25, 0, 9), (13, 26, 0, 10), (13, 35, 0, 11), (13, 28, 0, 12), (13, 8, 0, 13), (13, 9, 0, 14), (13, 10, 0, 15), (13, 11, 0, 16), (13, 12, 0, 17), (13, 13, 0, 18), (13, 14, 0, 19), (13, 15, 0, 20), (13, 16, 0, 21), (13, 17, 0, 22), (13, 18, 0, 23), (13, 19, 0, 24), (14, 1, 0, 0), (14, 2, 0, 1), (14, 43, 0, 2), (14, 6, 0, 3), (14, 25, 0, 4), (14, 26, 0, 5), (14, 8, 0, 6), (14, 9, 0, 7), (14, 10, 0, 8), (14, 11, 0, 9), (14, 12, 0, 10), (14, 13, 0, 11), (14, 14, 0, 12), (14, 15, 0, 13), (14, 16, 0, 14), (14, 17, 0, 15), (14, 18, 0, 16), (14, 19, 0, 17), (15, 72, 0, 0), (15, 2, 0, 1), (15, 6, 0, 2), (15, 8, 0, 3), (15, 9, 0, 4), (15, 10, 0, 5), (15, 11, 0, 6), (15, 14, 0, 7), (15, 15, 0, 8), (15, 18, 0, 9), (15, 19, 0, 10), (16, 1, 0, 0), (16, 2, 0, 1), (16, 73, 0, 2), (16, 45, 0, 3), (16, 46, 0, 4), (16, 22, 0, 5), (16, 23, 0, 6), (16, 47, 0, 7), (16, 6, 0, 8), (16, 25, 0, 9), (16, 26, 0, 10), (16, 35, 0, 11), (16, 28, 0, 12), (16, 8, 0, 13), (16, 9, 0, 14), (16, 10, 0, 15), (16, 11, 0, 16), (16, 12, 0, 17), (16, 13, 0, 18), (16, 14, 0, 19), (16, 15, 0, 20), (16, 16, 0, 21), (16, 17, 0, 22), (16, 18, 0, 23), (16, 19, 0, 24), (17, 1, 0, 0), (17, 2, 0, 1), (17, 74, 0, 2), (17, 26, 0, 3), (17, 6, 0, 4), (17, 75, 0, 5), (17, 76, 0, 6), (17, 27, 0, 7), (17, 8, 0, 8), (17, 9, 0, 9), (17, 10, 0, 10), (17, 11, 0, 11), (17, 12, 0, 12), (17, 13, 0, 13), (17, 14, 0, 14), (17, 15, 0, 15), (17, 16, 0, 16), (17, 17, 0, 17), (17, 18, 0, 18), (17, 19, 0, 19), (18, 1, 0, 0), (18, 2, 0, 1), (18, 77, 0, 2), (18, 78, 0, 3), (18, 6, 0, 4), (18, 8, 0, 5), (18, 9, 0, 6), (18, 10, 0, 7), (18, 11, 0, 8), (18, 14, 0, 9), (18, 15, 0, 10), (18, 18, 0, 11), (18, 19, 0, 12), (19, 1, 0, 0), (19, 2, 0, 1), (19, 79, 0, 2), (19, 25, 0, 3), (19, 23, 0, 4), (19, 80, 0, 5), (19, 35, 0, 6), (19, 36, 0, 7), (19, 38, 0, 8), (19, 39, 0, 9), (19, 6, 0, 10), (19, 26, 0, 11), (19, 8, 0, 12), (19, 9, 0, 13), (19, 10, 0, 14), (19, 11, 0, 15), (19, 14, 0, 16), (19, 15, 0, 17), (19, 18, 0, 18), (19, 19, 0, 19), (20, 1, 0, 0), (20, 2, 0, 1), (20, 6, 0, 2), (20, 8, 0, 3), (20, 9, 0, 4), (20, 10, 0, 5), (20, 11, 0, 6), (20, 14, 0, 7), (20, 15, 0, 8), (20, 18, 0, 9), (20, 19, 0, 10), (21, 1, 0, 0), (21, 2, 0, 1), (21, 81, 0, 2), (21, 6, 0, 3), (21, 25, 0, 4), (21, 26, 0, 5), (21, 8, 0, 6), (21, 9, 0, 7), (21, 10, 0, 8), (21, 11, 0, 9), (21, 12, 0, 10), (21, 13, 0, 11), (21, 14, 0, 12), (21, 15, 0, 13), (21, 16, 0, 14), (21, 17, 0, 15), (21, 18, 0, 16), (21, 19, 0, 17), (22, 1, 0, 0), (22, 2, 0, 1), (22, 41, 0, 2), (22, 25, 0, 3), (22, 26, 0, 4), (22, 6, 0, 5), (22, 22, 0, 6), (22, 67, 0, 7), (22, 33, 0, 8), (22, 82, 0, 9), (22, 83, 0, 10), (22, 35, 0, 11), (22, 45, 0, 12), (22, 21, 0, 13), (22, 84, 0, 14), (22, 85, 0, 15), (22, 8, 0, 16), (22, 9, 0, 17), (22, 10, 0, 18), (22, 11, 0, 19), (22, 86, 0, 20), (22, 87, 0, 21), (22, 44, 0, 22), (22, 12, 0, 23), (22, 13, 0, 24), (22, 14, 0, 25), (22, 15, 0, 26), (22, 16, 0, 27), (22, 17, 0, 28), (22, 18, 0, 29), (22, 19, 0, 30), (23, 1, 0, 0), (23, 2, 0, 1), (23, 88, 0, 2), (23, 6, 0, 3), (23, 7, 0, 4), (23, 8, 0, 5), (23, 9, 0, 6), (23, 10, 0, 7), (23, 11, 0, 8), (23, 12, 0, 9), (23, 13, 0, 10), (23, 14, 0, 11), (23, 15, 0, 12), (23, 16, 0, 13), (23, 17, 0, 14), (23, 18, 0, 15), (23, 19, 0, 16), (24, 1, 0, 0), (24, 2, 0, 1), (24, 41, 0, 2), (24, 25, 0, 3), (24, 26, 0, 4), (24, 6, 0, 5), (24, 22, 0, 6), (24, 67, 0, 7), (24, 35, 0, 8), (24, 44, 0, 9), (24, 8, 0, 10), (24, 9, 0, 11), (24, 10, 0, 12), (24, 11, 0, 13), (24, 12, 0, 14), (24, 13, 0, 15), (24, 14, 0, 16), (24, 15, 0, 17), (24, 16, 0, 18), (24, 17, 0, 19), (24, 18, 0, 20), (24, 19, 0, 21), (25, 1, 0, 0), (25, 2, 0, 1), (25, 89, 0, 2), (25, 90, 0, 3), (25, 26, 0, 4), (25, 6, 0, 5), (25, 52, 0, 6), (25, 30, 0, 7), (25, 8, 0, 8), (25, 9, 0, 9), (25, 10, 0, 10), (25, 11, 0, 11), (25, 12, 0, 12), (25, 13, 0, 13), (25, 14, 0, 14), (25, 15, 0, 15), (25, 16, 0, 16), (25, 17, 0, 17), (25, 18, 0, 18), (25, 19, 0, 19), (26, 1, 0, 0), (26, 2, 0, 1), (26, 91, 0, 2), (26, 92, 0, 3), (26, 21, 0, 4), (26, 47, 0, 5), (26, 25, 0, 6), (26, 26, 0, 7), (26, 6, 0, 8), (26, 8, 0, 9), (26, 28, 0, 10), (26, 9, 0, 11), (26, 10, 0, 12), (26, 11, 0, 13), (26, 12, 0, 14), (26, 13, 0, 15), (26, 14, 0, 16), (26, 15, 0, 17), (26, 16, 0, 18), (26, 17, 0, 19), (26, 18, 0, 20), (26, 19, 0, 21), (27, 1, 0, 0), (27, 2, 0, 1), (27, 41, 0, 2), (27, 25, 0, 3), (27, 26, 0, 4), (27, 6, 0, 5), (27, 22, 0, 6), (27, 67, 0, 7), (27, 47, 0, 8), (27, 33, 0, 9), (27, 35, 0, 10), (27, 44, 0, 11), (27, 8, 0, 12), (27, 9, 0, 13), (27, 10, 0, 14), (27, 11, 0, 15), (27, 12, 0, 16), (27, 13, 0, 17), (27, 14, 0, 18), (27, 15, 0, 19), (27, 16, 0, 20), (27, 17, 0, 21), (27, 18, 0, 22), (27, 19, 0, 23), (29, 1, 0, 0), (29, 2, 0, 1), (29, 26, 0, 2), (29, 93, 0, 3), (29, 94, 0, 4), (29, 95, 0, 5), (29, 96, 0, 6), (29, 97, 0, 7), (29, 35, 0, 8), (29, 98, 0, 9), (29, 99, 0, 10), (29, 100, 0, 11), (29, 101, 0, 12), (29, 102, 0, 13), (29, 103, 0, 14), (29, 8, 0, 15), (29, 9, 0, 16), (29, 10, 0, 17), (29, 11, 0, 18), (29, 14, 0, 19), (29, 15, 0, 20), (29, 18, 0, 21), (29, 19, 0, 22), (30, 1, 0, 0), (30, 2, 0, 1), (30, 21, 0, 2), (30, 105, 0, 3), (30, 106, 0, 4), (30, 6, 0, 5), (30, 25, 0, 6), (30, 26, 0, 7), (30, 27, 0, 8), (30, 8, 0, 9), (30, 9, 0, 10), (30, 10, 0, 11), (30, 11, 0, 12), (30, 14, 0, 13), (30, 15, 0, 14), (30, 18, 0, 15), (30, 19, 0, 16), (31, 1, 0, 0), (31, 2, 0, 1), (31, 75, 0, 2), (31, 69, 0, 3), (31, 107, 0, 4), (31, 26, 0, 5), (31, 6, 0, 6), (31, 45, 0, 7), (31, 46, 0, 8), (31, 8, 0, 9), (31, 9, 0, 10), (31, 10, 0, 11), (31, 11, 0, 12), (31, 12, 0, 13), (31, 13, 0, 14), (31, 14, 0, 15), (31, 15, 0, 16), (31, 16, 0, 17), (31, 17, 0, 18), (31, 18, 0, 19), (31, 19, 0, 20), (32, 1, 0, 0), (32, 2, 0, 1), (32, 108, 0, 2), (32, 6, 0, 3), (32, 109, 0, 4), (32, 26, 0, 5), (32, 45, 0, 6), (32, 110, 0, 7), (32, 8, 0, 8), (32, 9, 0, 9), (32, 10, 0, 10), (32, 11, 0, 11), (32, 14, 0, 12), (32, 15, 0, 13), (32, 18, 0, 14), (32, 19, 0, 15), (33, 1, 0, 0), (33, 2, 0, 1), (33, 111, 0, 2), (33, 105, 0, 3), (33, 20, 0, 4), (33, 112, 0, 5), (33, 26, 0, 6), (33, 6, 0, 7), (33, 27, 0, 8), (33, 8, 0, 9), (33, 9, 0, 10), (33, 10, 0, 11), (33, 11, 0, 12), (33, 12, 0, 13), (33, 13, 0, 14), (33, 14, 0, 15), (33, 15, 0, 16), (33, 16, 0, 17), (33, 17, 0, 18), (33, 18, 0, 19), (33, 19, 0, 20), (34, 1, 0, 0), (34, 2, 0, 1), (34, 113, 0, 2), (34, 114, 0, 3), (34, 90, 0, 4), (34, 26, 0, 5), (34, 6, 0, 6), (34, 21, 0, 7), (34, 46, 0, 8), (34, 35, 0, 9), (34, 8, 0, 10), (34, 28, 0, 11), (34, 9, 0, 12), (34, 10, 0, 13), (34, 11, 0, 14), (34, 44, 0, 15), (34, 12, 0, 16), (34, 13, 0, 17), (34, 14, 0, 18), (34, 15, 0, 19), (34, 16, 0, 20), (34, 17, 0, 21), (34, 18, 0, 22), (34, 19, 0, 23), (35, 1, 0, 0), (35, 2, 0, 1), (35, 115, 0, 2), (35, 79, 0, 3), (35, 43, 0, 4), (35, 30, 0, 5), (35, 61, 0, 6), (35, 47, 0, 7), (35, 104, 0, 8), (35, 6, 0, 9), (35, 25, 0, 10), (35, 26, 0, 11), (35, 82, 0, 12), (35, 83, 0, 13), (35, 28, 0, 14), (35, 8, 0, 15), (35, 9, 0, 16), (35, 10, 0, 17), (35, 11, 0, 18), (35, 12, 0, 19), (35, 13, 0, 20), (35, 14, 0, 21), (35, 52, 0, 22), (35, 15, 0, 23), (35, 16, 0, 24), (35, 17, 0, 25), (35, 18, 0, 26), (35, 19, 0, 27), (36, 116, 0, 0), (36, 2, 0, 1), (36, 31, 0, 2), (36, 117, 0, 3), (36, 118, 0, 4), (36, 119, 0, 5), (36, 35, 0, 6), (36, 33, 0, 7), (36, 38, 0, 8), (36, 39, 0, 9), (36, 8, 0, 10), (36, 9, 0, 11), (36, 10, 0, 12), (36, 11, 0, 13), (36, 14, 0, 14), (36, 15, 0, 15), (36, 18, 0, 16), (36, 19, 0, 17), (37, 1, 0, 0), (37, 2, 0, 1), (37, 120, 0, 2), (37, 121, 0, 3), (37, 26, 0, 4), (37, 6, 0, 5), (37, 45, 0, 6), (37, 46, 0, 7), (37, 52, 0, 8), (37, 8, 0, 9), (37, 28, 0, 10), (37, 9, 0, 11), (37, 10, 0, 12), (37, 11, 0, 13), (37, 44, 0, 14), (37, 12, 0, 15), (37, 13, 0, 16), (37, 14, 0, 17), (37, 15, 0, 18), (37, 16, 0, 19), (37, 17, 0, 20), (37, 18, 0, 21), (37, 19, 0, 22), (38, 1, 0, 0), (38, 2, 0, 1), (38, 111, 0, 2), (38, 105, 0, 3), (38, 76, 0, 4), (38, 112, 0, 5), (38, 26, 0, 6), (38, 6, 0, 7), (38, 27, 0, 8), (38, 8, 0, 9), (38, 9, 0, 10), (38, 10, 0, 11), (38, 11, 0, 12), (38, 12, 0, 13), (38, 13, 0, 14), (38, 14, 0, 15), (38, 15, 0, 16), (38, 16, 0, 17), (38, 17, 0, 18), (38, 18, 0, 19), (38, 19, 0, 20), (39, 1, 0, 0), (39, 2, 0, 1), (39, 76, 0, 2), (39, 21, 0, 3), (39, 22, 0, 4), (39, 23, 0, 5), (39, 122, 0, 6), (39, 26, 0, 7), (39, 6, 0, 8), (39, 27, 0, 9), (39, 28, 0, 10), (39, 8, 0, 11), (39, 9, 0, 12), (39, 10, 0, 13), (39, 11, 0, 14), (39, 12, 0, 15), (39, 13, 0, 16), (39, 14, 0, 17), (39, 15, 0, 18), (39, 16, 0, 19), (39, 17, 0, 20), (39, 18, 0, 21), (39, 19, 0, 22), (40, 1, 0, 0), (40, 2, 0, 1), (40, 123, 0, 2), (40, 42, 0, 3), (40, 6, 0, 4), (40, 25, 0, 5), (40, 26, 0, 6), (40, 8, 0, 7), (40, 9, 0, 8), (40, 10, 0, 9), (40, 11, 0, 10), (40, 14, 0, 11), (40, 15, 0, 12), (40, 18, 0, 13), (40, 19, 0, 14)
+
+(4)(+0000001): INSERT INTO baseFieldMappings VALUES (2, 4, 3), (4, 4, 20), (4, 25, 24), (5, 30, 29), (5, 22, 32), (5, 35, 34), (5, 37, 36), (6, 41, 40), (6, 43, 42), (7, 4, 51), (8, 41, 53), (8, 4, 51), (9, 1, 54), (9, 37, 55), (9, 6, 56), (9, 30, 57), (9, 22, 59), (9, 35, 60), (10, 25, 63), (11, 41, 65), (12, 30, 68), (12, 25, 69), (12, 26, 70), (12, 4, 51), (13, 41, 71), (15, 1, 72), (16, 41, 73), (17, 25, 74), (17, 43, 75), (17, 4, 76), (18, 41, 77), (18, 43, 78), (19, 30, 80), (19, 37, 36), (21, 4, 81), (23, 43, 88), (25, 43, 89), (25, 25, 90), (26, 43, 91), (29, 37, 95), (29, 30, 96), (29, 6, 100), (29, 48, 101), (29, 104, 103), (30, 30, 105), (30, 4, 106), (31, 43, 75), (31, 25, 69), (31, 30, 107), (32, 43, 108), (32, 41, 110), (33, 41, 111), (33, 30, 105), (33, 4, 20), (33, 25, 112), (34, 30, 113), (34, 43, 114), (34, 25, 90), (35, 37, 115), (36, 1, 116), (36, 30, 118), (36, 6, 119), (37, 43, 120), (37, 25, 121), (38, 41, 111), (38, 30, 105), (38, 4, 76), (38, 25, 112), (39, 4, 76), (39, 25, 122), (40, 41, 123), (40, 43, 42)
+
+(4)(+0000000): INSERT INTO itemTypeCreatorTypes VALUES (2, 1, 1), (2, 2, 0), (4, 3, 1), (4, 4, 0), (4, 5, 0), (4, 6, 0), (4, 7, 0), (4, 2, 0), (5, 8, 1), (5, 9, 0), (5, 2, 0), (6, 10, 1), (6, 7, 0), (6, 11, 0), (6, 2, 0), (7, 10, 1), (7, 2, 0), (7, 12, 0), (7, 7, 0), (7, 13, 0), (8, 10, 1), (8, 2, 0), (8, 12, 0), (8, 14, 0), (8, 7, 0), (8, 13, 0), (9, 10, 1), (9, 15, 0), (9, 2, 0), (10, 16, 1), (10, 2, 0), (11, 10, 1), (11, 2, 0), (11, 12, 0), (11, 7, 0), (11, 13, 0), (12, 10, 1), (12, 2, 0), (13, 10, 1), (13, 2, 0), (13, 12, 0), (13, 7, 0), (13, 13, 0), (14, 10, 1), (14, 2, 0), (14, 12, 0), (14, 7, 0), (14, 17, 0), (15, 10, 1), (15, 7, 0), (15, 2, 0), (15, 18, 0), (16, 10, 1), (16, 2, 0), (16, 12, 0), (16, 7, 0), (16, 13, 0), (17, 19, 1), (17, 20, 0), (17, 21, 0), (17, 22, 0), (17, 23, 0), (17, 24, 0), (17, 25, 0), (17, 7, 0), (17, 2, 0), (18, 10, 1), (18, 2, 0), (19, 2, 1), (20, 10, 1), (20, 2, 0), (20, 18, 0), (21, 26, 1), (21, 2, 0), (21, 27, 0), (21, 7, 0), (22, 10, 1), (22, 2, 0), (22, 12, 0), (22, 7, 0), (22, 17, 0), (23, 10, 1), (23, 18, 0), (23, 2, 0), (23, 7, 0), (24, 10, 1), (24, 2, 0), (24, 7, 0), (24, 17, 0), (25, 10, 1), (25, 2, 0), (25, 7, 0), (26, 28, 1), (26, 2, 0), (26, 13, 0), (27, 10, 1), (27, 2, 0), (27, 7, 0), (27, 17, 0), (29, 29, 1), (29, 30, 0), (29, 2, 0), (30, 31, 1), (30, 24, 0), (30, 20, 0), (30, 32, 0), (30, 33, 0), (30, 19, 0), (30, 21, 0), (30, 22, 0), (30, 7, 0), (30, 2, 0), (31, 10, 1), (31, 2, 0), (31, 12, 0), (31, 7, 0), (31, 17, 0), (32, 34, 1), (32, 35, 0), (32, 36, 0), (32, 2, 0), (32, 7, 0), (33, 37, 1), (33, 23, 0), (33, 24, 0), (33, 20, 0), (33, 32, 0), (33, 33, 0), (33, 19, 0), (33, 21, 0), (33, 22, 0), (33, 7, 0), (33, 2, 0), (34, 10, 1), (34, 12, 0), (34, 2, 0), (34, 7, 0), (34, 13, 0), (35, 10, 1), (35, 12, 0), (35, 2, 0), (36, 10, 1), (36, 2, 0), (37, 10, 1), (37, 2, 0), (38, 19, 1), (38, 20, 0), (38, 32, 0), (38, 33, 0), (38, 21, 0), (38, 22, 0), (38, 23, 0), (38, 24, 0), (38, 25, 0), (38, 7, 0), (38, 2, 0), (39, 37, 1), (39, 19, 0), (39, 20, 0), (39, 21, 0), (39, 32, 0), (39, 22, 0), (39, 23, 0), (39, 24, 0), (39, 25, 0), (39, 7, 0), (39, 2, 0), (40, 10, 1), (40, 2, 0), (40, 7, 0)
+
+(4)(+0000026): REPLACE INTO settings VALUES ('globalSchema', 'data', :data)
+
+(4)(+0000001): REPLACE INTO version (schema,version) VALUES (?,?) ['globalSchema', 42]
+
+(3)(+0000001): Getting contents of [xpconnect wrapped nsIChannel]
+
+(3)(+0000003): Updating custom tables
+
+(4)(+0000000): PRAGMA foreign_keys
+
+(4)(+0000000): DELETE FROM itemTypesCombined
+
+(4)(+0000000): DELETE FROM fieldsCombined
+
+(4)(+0000001): DELETE FROM itemTypeFieldsCombined
+
+(4)(+0000000): DELETE FROM baseFieldMappingsCombined
+
+(4)(+0000001): INSERT INTO itemTypesCombined SELECT itemTypeID, typeName, display, 0 AS custom FROM itemTypes UNION SELECT customItemTypeID + 10000 AS itemTypeID, typeName, display, 1 AS custom FROM customItemTypes
+
+(4)(+0000000): INSERT INTO fieldsCombined SELECT fieldID, fieldName, NULL AS label, fieldFormatID, 0 AS custom FROM fields UNION SELECT customFieldID + 10000 AS fieldID, fieldName, label, NULL, 1 AS custom FROM customFields
+
+(4)(+0000000): INSERT INTO itemTypeFieldsCombined SELECT itemTypeID, fieldID, hide, orderIndex FROM itemTypeFields UNION SELECT customItemTypeID + 10000 AS itemTypeID, COALESCE(fieldID, customFieldID + 10000) AS fieldID, hide, orderIndex FROM customItemTypeFields
+
+(4)(+0000000): INSERT INTO baseFieldMappingsCombined SELECT itemTypeID, baseFieldID, fieldID FROM baseFieldMappings UNION SELECT customItemTypeID + 10000 AS itemTypeID, baseFieldID, customFieldID + 10000 AS fieldID FROM customBaseFieldMappings
+
+(4)(+0000001): SELECT itemTypeID AS id, typeName AS name, custom FROM itemTypesCombined
+
+(4)(+0000000): SELECT itemTypeID AS id, typeName AS name, custom FROM itemTypesCombined WHERE typeName IN ('webpage', 'attachment', 'note', 'annotation')
+
+(4)(+0000000): SELECT customItemTypeID AS id, label, icon FROM customItemTypes
+
+(4)(+0000001): SELECT * FROM fieldFormats
+
+(4)(+0000000): SELECT * FROM fieldsCombined
+
+(4)(+0000000): SELECT fieldID, itemTypeID FROM itemTypeFieldsCombined
+
+(4)(+0000002): SELECT DISTINCT baseFieldID FROM baseFieldMappingsCombined
+
+(4)(+0000001): SELECT IT.itemTypeID, F.fieldID AS baseFieldID, BFM.fieldID FROM itemTypesCombined IT LEFT JOIN fieldsCombined F LEFT JOIN baseFieldMappingsCombined BFM ON (IT.itemTypeID=BFM.itemTypeID AND F.fieldID=BFM.baseFieldID)
+
+(4)(+0000009): SELECT DISTINCT baseFieldID FROM baseFieldMappingsCombined
+
+(4)(+0000010): SELECT itemTypeID, baseFieldID, fieldID, fieldName FROM baseFieldMappingsCombined JOIN fieldsCombined USING (fieldID)
+
+(4)(+0000001): SELECT DISTINCT fieldID FROM baseFieldMappingsCombined
+
+(4)(+0000000): SELECT itemTypeID, fieldID FROM itemTypeFieldsCombined ORDER BY orderIndex
+
+(4)(+0000002): SELECT creatorTypeID AS id, creatorType AS name FROM creatorTypes
+
+(4)(+0000001): SELECT itemTypeID, creatorTypeID AS id, creatorType AS name, primaryField FROM itemTypeCreatorTypes NATURAL JOIN creatorTypes
+
+(4)(+0000002): SELECT itemTypeID, creatorTypeID FROM itemTypeCreatorTypes WHERE primaryField=1
+
+(4)(+0000001): SELECT fieldName FROM fieldsCombined WHERE fieldName NOT IN ('accessDate', 'date', 'pages', 'section','seriesNumber','issue')
+
+(1)(+0000000): Unknown item type 'nsfReviewer'
+
+(1)(+0000000): Unknown item type 'nsfReviewer'
+
+(1)(+0000001): Localized string not available for search-conditions-dateAdded
+
+(1)(+0000000): Localized string not available for search-conditions-title
+
+(1)(+0000000): Localized string not available for search-conditions-abstractNote
+
+(1)(+0000000): Localized string not available for search-conditions-medium
+
+(1)(+0000000): Localized string not available for search-conditions-artworkSize
+
+(1)(+0000000): Localized string not available for search-conditions-eventPlace
+
+(1)(+0000000): Localized string not available for search-conditions-DOI
+
+(1)(+0000000): Localized string not available for search-conditions-citationKey
+
+(1)(+0000000): Localized string not available for search-conditions-url
+
+(1)(+0000000): Localized string not available for search-conditions-archive
+
+(1)(+0000000): Localized string not available for search-conditions-archiveLocation
+
+(1)(+0000000): Localized string not available for search-conditions-shortTitle
+
+(1)(+0000000): Localized string not available for search-conditions-language
+
+(1)(+0000000): Localized string not available for search-conditions-libraryCatalog
+
+(1)(+0000000): Localized string not available for search-conditions-callNumber
+
+(1)(+0000000): Localized string not available for search-conditions-rights
+
+(1)(+0000000): Localized string not available for search-conditions-extra
+
+(1)(+0000000): Localized string not available for search-conditions-seriesTitle
+
+(1)(+0000000): Localized string not available for search-conditions-volume
+
+(1)(+0000000): Localized string not available for search-conditions-numberOfVolumes
+
+(1)(+0000000): Localized string not available for search-conditions-publisher
+
+(1)(+0000000): Localized string not available for search-conditions-place
+
+(1)(+0000000): Localized string not available for search-conditions-runningTime
+
+(1)(+0000000): Localized string not available for search-conditions-ISBN
+
+(1)(+0000000): Localized string not available for search-conditions-number
+
+(1)(+0000000): Localized string not available for search-conditions-code
+
+(1)(+0000000): Localized string not available for search-conditions-authority
+
+(1)(+0000000): Localized string not available for search-conditions-session
+
+(1)(+0000000): Localized string not available for search-conditions-history
+
+(1)(+0000000): Localized string not available for search-conditions-publicationTitle
+
+(1)(+0000000): Localized string not available for search-conditions-type
+
+(1)(+0000000): Localized string not available for search-conditions-ISSN
+
+(1)(+0000000): Localized string not available for search-conditions-series
+
+(1)(+0000000): Localized string not available for search-conditions-edition
+
+(1)(+0000000): Localized string not available for search-conditions-originalDate
+
+(1)(+0000000): Localized string not available for search-conditions-originalPublisher
+
+(1)(+0000000): Localized string not available for search-conditions-originalPlace
+
+(1)(+0000000): Localized string not available for search-conditions-numPages
+
+(1)(+0000000): Localized string not available for search-conditions-reporter
+
+(1)(+0000000): Localized string not available for search-conditions-versionNumber
+
+(1)(+0000000): Localized string not available for search-conditions-system
+
+(1)(+0000000): Localized string not available for search-conditions-conferenceName
+
+(1)(+0000000): Localized string not available for search-conditions-committee
+
+(1)(+0000000): Localized string not available for search-conditions-partNumber
+
+(1)(+0000000): Localized string not available for search-conditions-partTitle
+
+(1)(+0000000): Localized string not available for search-conditions-seriesText
+
+(1)(+0000000): Localized string not available for search-conditions-journalAbbreviation
+
+(1)(+0000000): Localized string not available for search-conditions-PMID
+
+(1)(+0000000): Localized string not available for search-conditions-PMCID
+
+(1)(+0000000): Localized string not available for search-conditions-scale
+
+(1)(+0000000): Localized string not available for search-conditions-country
+
+(1)(+0000000): Localized string not available for search-conditions-assignee
+
+(1)(+0000000): Localized string not available for search-conditions-filingDate
+
+(1)(+0000000): Localized string not available for search-conditions-applicationNumber
+
+(1)(+0000000): Localized string not available for search-conditions-priorityNumbers
+
+(1)(+0000000): Localized string not available for search-conditions-references
+
+(1)(+0000000): Localized string not available for search-conditions-status
+
+(1)(+0000000): Localized string not available for search-conditions-meetingName
+
+(1)(+0000000): Localized string not available for search-conditions-codeNumber
+
+(1)(+0000000): Localized string not available for search-conditions-accessDate
+
+(1)(+0000000): Localized string not available for search-conditions-date
+
+(1)(+0000000): Localized string not available for search-conditions-pages
+
+(1)(+0000000): Localized string not available for search-conditions-section
+
+(1)(+0000000): Localized string not available for search-conditions-seriesNumber
+
+(1)(+0000000): Localized string not available for search-conditions-issue
+
+(4)(+0000000): REPLACE INTO settings VALUES ('globalSchema', 'migrateExtra', 1)
+
+(4)(+0000002): Committed DB transaction jiy6FXcQ
+
+(4)(+0000000): PRAGMA foreign_keys = true

@@ -1,0 +1,20 @@
+# Core physics and RL
+mujoco>=3.0.0
+gymnasium>=0.29.0
+stable-baselines3>=2.0.0
+torch>=2.0.0
+
+# Config and utilities
+pyyaml>=6.0
+numpy>=1.24.0
+
+# TensorBoard logging (for train.py)
+tensorboard>=2.13.0
+
+# Optional: Robosuite backend
+# Uncomment to use robosuite_envs/ with Panda or custom SO-100 robot
+# robosuite>=1.4.0
+
+# Optional: plotting / analysis
+# matplotlib>=3.7.0
+# pandas>=2.0.0

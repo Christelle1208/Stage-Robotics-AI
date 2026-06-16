@@ -1,0 +1,25 @@
+# Full SAC training run — ~2.5h on M1 Pro.
+# Run this after the fast test (sac_so100_real_fast.yaml) confirms learning is happening.
+
+algo: sac
+env_id: SO100RealPickPlace-v0
+total_timesteps: 1000000
+seed: 42
+device: cpu               # MPS adds overhead for this network size; CPU is faster
+log_dir: outputs/logs/sac_so100_real
+model_dir: outputs/models
+checkpoint_freq: 50000
+
+policy: MlpPolicy
+learning_rate: 0.0003
+buffer_size: 1000000
+learning_starts: 5000     # reduced from 10k — starts learning earlier
+batch_size: 256
+tau: 0.005
+gamma: 0.99
+train_freq: 1
+gradient_steps: 1
+ent_coef: auto
+target_update_interval: 1
+verbose: 1
+tensorboard_log: outputs/logs/tensorboard

@@ -1,0 +1,24 @@
+<!--
+  Reusable free-floating cube object.
+  Include inside a <worldbody> block.
+
+  Usage:
+    <body name="cube" pos="0.25 0.0 0.03">
+      <include file="../objects/cube.xml"/>
+    </body>
+
+  The parent body name determines how the cube is referenced in Python
+  (env config: object_name: cube).
+-->
+<mujoco>
+  <freejoint name="cube_joint"/>
+  <geom name="cube_geom"
+        type="box"
+        size="0.025 0.025 0.025"
+        mass="0.05"
+        material="cube_material"
+        contype="1"
+        conaffinity="1"
+        solimp="0.9 0.95 0.001"
+        solref="0.02 1"/>
+</mujoco>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scene>
+  <camera id="main_camera">
+    <position x="0.5" y="0.5" z="0.5"/>
+    <rotation x="0" y="0" z="0"/>
+    <intrinsics>
+      <focal_length_x>800</focal_length_x>
+      <focal_length_y>800</focal_length_y>
+      <principal_point_x>320</principal_point_x>
+      <principal_point_y>240</principal_point_y>
+    </intrinsics>
+  </camera>
+  <object id="cube" type="box">
+    <position x="0" y="0" z="0"/>
+    <dimensions width="0.1" height="0.1" depth="0.1"/>
+    <material>
+      <color r="0.8" g="0.8" b="0.8"/>
+    </material>
+    <marker id="marker_42" type="aruco">
+      <position x="0" y="0.05" z="0"/>
+      <rotation x="0" y="0" z="0"/>
+      <dictionary>DICT_6X6_250</dictionary>
+      <marker_id>42</marker_id>
+      <size>0.08</size>
+    </marker>
+  </object>
+  <object id="robot" type="robot">
+    <position x="0.3" y="0" z="0"/>
+    <rotation x="0" y="0" z="0"/>
+  </object>
+  <light id="main_light" type="directional">
+    <position x="0.5" y="1" z="0.5"/>
+    <intensity>1.0</intensity>
+  </light>
+  <calibration>
+    <reference_marker id="marker_42"/>
+    <marker_size_mm>80</marker_size_mm>
+    <expected_distance_m>0.3</expected_distance_m>
+  </calibration>
+</scene>

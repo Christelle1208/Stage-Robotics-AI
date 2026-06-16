@@ -1,0 +1,151 @@
+# =============================================================================
+# SAC Three-Agent Pick-and-Place — Configuration
+# =============================================================================
+# Based on: "A Pick-and-Place Task Using Three Agents with Soft Actor-Critic"
+# MDPI Biomimetics 8(2):240
+#
+# Architecture: REACH → GRASP → PLACE
+#   Agent 1 (Reach): move end-effector to pre-grasp position
+#   Agent 2 (Grasp): close gripper, lift object
+#   Agent 3 (Place): transport to goal, release
+#
+# All agents use SAC (Soft Actor-Critic) — better sample efficiency than PPO
+# for continuous control, entropy regularisation provides natural exploration.
+# =============================================================================
+
+robot:
+  name: "so100_arm"
+  dof: 6                         # 5 arm joints + 1 jaw
+  control_type: "position_delta" # delta targets each step
+  gripper_threshold: 0.3         # jaw below this = gripper fully closed
+  gripper_cube_jaw: 0.6          # jaw angle at which fingers wrap the cube
+  gripper_open_jaw: 1.2          # jaw angle = gripper fully open
+
+env:
+  xml_path: "assets/scene_table.xml"
+  timestep: 0.004                # MuJoCo physics timestep (seconds)
+  frame_skip: 5                  # policy runs at 50 Hz (0.004 × 5 = 20ms/step)
+  delta_scale: 0.02              # max joint movement per step (rad, ≈2°) — for ±10cm range
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Scene variants
+#   "flat"  — original scene: cube + transparent goal marker on the ground
+#   "box"   — new scene: cube on ground + open box as goal container
+# Switch by changing scene_mode and xml_path together (or use --scene CLI flag)
+# ─────────────────────────────────────────────────────────────────────────────
+scene_mode: "flat"               # "flat" | "box"
+
+scene_variants:
+  flat:
+    xml_path: "assets/scene_table.xml"
+  box:
+    xml_path: "assets/scene_box.xml"
+    # For box mode the success criterion changes: object must be INSIDE the box
+    # (XY within inner walls ±4 cm, Z above the floor ≥ 0 and ≤ wall height 6 cm).
+    # The box centre is the goal position; place_threshold covers the inner radius.
+    place_threshold_box: 0.06    # 6 cm — covers model trained on different release_height
+    # Release height: agent should open the gripper when EE is above the box opening.
+    release_height: 0.12         # z of EE above the box floor when releasing (~12 cm)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Agent 1 — REACH
+# ─────────────────────────────────────────────────────────────────────────────
+reach:
+  max_episode_steps: 400         # fewer steps → forces model to learn larger, faster actions
+  frame_skip: 5                 # 2× faster physical movement than default (5)
+  obs_dim: 19                    # [q(6) | ee_pos(3) | obj_pos(3) | ee_vel(3) | jaw(1) | rel_ee_obj(3)]
+
+  rewards:
+    # Paper Eq. (14)-(17): r_pos = Kx*(x_ee-x_g)^2 + Ky*(y_ee-y_g)^2 + Kz*(z_ee-z_g)^2
+    kx: -2.0                     # Eq. (17): reaching task — prioritize XY alignment
+    ky: -2.0                     # Eq. (17): reaching task — prioritize XY alignment
+    kz: -2.0                     # Eq. (17): equal weight — approach at cube height
+    energy_weight: 0.00003       # Eq. (18): r_energy = -weight * sum(|F_i|)
+    success_bonus: 20.0          # sparse: given once on success
+    gripper_open_bonus: 0.02     # small per-step bonus for keeping gripper open (must not dominate r_pos)
+
+  success:
+    reach_threshold: 0.015          # 1.5 cm — success if EE is within this distance of the pre-grasp position
+    pre_grasp_offset_z: 0.0      # no offset — grasp site goes to cube centre (jaws straddle cube)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Agent 2 — GRASP (scripted — no SAC model needed)
+# ─────────────────────────────────────────────────────────────────────────────
+grasp:
+  scripted: true                  # no SAC training — just close the gripper
+  close_steps: 80                 # number of steps to gradually close the jaw
+  delta_per_step: 0.02            # jaw closure increment per step (rad)
+  settle_steps: 20                # extra steps after jaw is closed to let physics settle
+
+  success:
+    lift_height: 0.28             # not used for scripted but kept for PlaceEnv reference
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Agent 3 — PLACE
+# ─────────────────────────────────────────────────────────────────────────────
+place:
+  max_episode_steps: 600
+  delta_scale: 0.04              # moderate steps — transport cube without overshooting
+
+  rewards:
+    # Paper Eq. (13)-(17): r_pos = Kx*(dx)^2 + Ky*(dy)^2 + Kz*(dz)^2
+    # Eq. (17) placing task coefficients: Kx=Ky=Kz=-1
+    kx: -1.0
+    ky: -1.0
+    kz: -1.0
+    energy_weight: 0.00003       # Eq. (18): r_energy = -weight * sum(|F_i|)
+    release_bonus: 25.0          # sparse: given once when object placed at goal
+    place_threshold: 0.020        # dist(object, goal) < 3 cm → success
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SAC Hyperparameters (same structure for all three agents)
+# ─────────────────────────────────────────────────────────────────────────────
+sac:
+  total_timesteps_reach: 200000  # needs enough exploration to cover ±7cm cube randomisation
+  total_timesteps_place: 250000  # 200k — placing is relatively straightforward
+
+  # ── Speed-up: parallel environment collection ─────────────────────────
+  # n_envs > 1 → data is collected from N environments simultaneously.
+  # Each env runs on a separate CPU core (SubprocVecEnv).
+  # Effective throughput ≈ n_envs × steps/s with almost no extra memory.
+  # Recommended: set to number of physical CPU cores - 1.
+  n_envs: 4                      # parallel envs for data collection (set to 1 to disable)
+
+  # ── Speed-up: hardware accelerator ───────────────────────────────────
+  # "auto" → SB3 picks MPS on Apple Silicon, CUDA on NVIDIA, else CPU.
+  # MPS gives ~2-3× speedup on the actor/critic forward-backward passes.
+  device: "auto"
+
+  # Core SAC parameters
+  learning_rate: 0.0001          # lower LR — reduces oscillations after finding good behaviour
+  buffer_size: 300000            # replay buffer capacity
+  batch_size: 256                # mini-batch size for gradient updates
+  tau: 0.002                     # slower target network updates — more stable
+  gamma: 0.99                    # discount factor (long-horizon tasks)
+
+  # gradient_steps: how many gradient updates per env step.
+  # With n_envs=4, data arrives 4× faster so we can afford fewer updates/step
+  # while keeping the same ratio of updates to data.
+  # Rule of thumb: gradient_steps = max(1, n_envs // 2)
+  gradient_steps: 2              # was 4 with n_envs=1 — same update/data ratio
+  learning_starts: 5000          # collect random data before starting updates
+
+  # Entropy temperature
+  ent_coef: 0.02                 # low entropy — exploit good behaviour once found
+  target_entropy: "auto"         # -dim(action) by default
+
+  # Neural network architecture
+  net_arch: [256, 256]           # hidden layers for both actor and critic
+  activation_fn: "relu"
+
+  # Evaluation & checkpointing
+  # eval_freq is per-env: with n_envs=4, true wall-clock freq = eval_freq / n_envs
+  eval_freq: 5000               # evaluate every N env steps
+  n_eval_episodes: 10             # was 10 — 5 is enough to track progress
+  checkpoint_freq: 50000
+
+  # ── Fast-mode overrides (used by --fast flag in train.py) ─────────────
+  # Reduced timesteps for quick iteration / debugging.
+  fast_timesteps_reach: 100000
+  fast_timesteps_grasp: 150000
+  fast_timesteps_place: 100000

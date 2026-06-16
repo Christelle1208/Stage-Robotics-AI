@@ -1,0 +1,131 @@
+# Configuration du Robot SO-100
+robot:
+  name: "so100_arm"
+  dof: 6
+  control_type: "position"
+  gripper_threshold: 0.3        # Jaw angle below this = gripper fully closed
+  gripper_cube_jaw: 0.6         # Jaw angle at which fingers wrap the 4cm cube (grip without crushing)
+
+# Paramètres de l'Environnement MuJoCo
+env:
+  xml_path: "scene_pick_place.xml"
+  timestep: 0.004               # As defined in scene_pick_place.xml
+  frame_skip: 5                 # Policy runs at 50Hz (0.004 * 5 = 20ms per step)
+  max_episode_steps: 2000       # Max steps per phase (pick OR place)
+  delta_scale: 0.02             # Max joint movement per step (radians, ~1°) — slower, more precise
+  reward_version: "v2"          # "v1" = original, "v2" = staged top-down grasp
+
+# Récompenses pour le modèle PICK
+rewards_pick:
+  dist_weight: 3.0              # base: -dist_weight × dist chaque step — fort signal continu vers le cube (était 0.5, trop faible)
+  dist_progress_bonus: 15.0     # bonus quand nouveau record de proximité — s'accumule à chaque step d'approche continue
+  alignment_bonus: 3.0          # PERSONAL-BEST: reward uniquement quand centering_score dépasse le meilleur de l'épi
+  approach_open_weight: 0.8     # pénalité si pince fermée pendant l'approche (dist > 5cm)
+  grasp_bonus: 8.0              # CONDITIONNEL: grasp × centering × closedness — seulement si cube monte
+  grasp_sigma: 0.025            # sigma 2.5cm
+  jaw_close_bonus: 3.0          # CONDITIONNEL: reward fermeture — seulement si cube monte (obj_z increasing)
+  hold_bonus: 8.0               # ONE-SHOT: fires once when grip achieved (dist<2cm, jaw closed) — robot doit lever ensuite
+  jaw_nudge_weight: 0.3         # petit nudge fermeture pince (dist < 3cm) — désactivé après hold collecté
+  lift_pull_weight: 2.0         # pénalité continue = -lift_pull × (lift_height - obj_z) quand cube tenu — pousse vers le haut
+  orient_bonus: 1.0             # PERSONAL-BEST: reward only wrist improvement exceeding episode best
+  lift_weight: 30.0             # PERSONAL-BEST: lift_weight × new_height_gained — osciller monte/descend = 0 reward
+  lift_bonus: 20.0              # sparse bonus on successful lift
+  collision_penalty: -0.2       # per-step penalty if arm hits table
+  step_penalty: 0.005           # small per-step penalty to encourage faster completion
+  lift_height: 0.28             # object z > this = lifted (table top ≈ 0.20m)
+
+# ── V2: staged top-down grasp ──────────────────────────────────────────────
+# Strategy taught: (1) approach from above with jaw open
+#                  (2) lower gripper to cube height while staying centred
+#                  (3) close jaw once aligned
+#                  (4) lift
+# All distance-based rewards use personal-best to prevent oscillation exploits.
+rewards_pick_v2:
+  # Phase 1 — fly above cube, jaw open
+  above_xy_weight: 3.0          # base: -weight × xy_dist (horizontal distance to cube)
+  above_xy_bonus: 15.0          # personal-best xy bonus (fire only on new closest horizontal approach)
+  above_open_weight: 1.0        # bonus for keeping jaw open while above and far (xy > 5cm)
+  above_z_min: 0.04             # gripper must be at least 4cm above cube to get above bonus
+
+  # Phase 2 — descend to cube height (only active when xy < 5cm)
+  descend_weight: 2.0           # base: -weight × z_gap where z_gap = max(0, gripper_z - cube_z)
+  descend_bonus: 20.0           # personal-best z alignment bonus (new closest z gap)
+  xy_lock_penalty: 2.0          # penalty for xy drift while descending (xy > 3cm when z_gap < 4cm)
+
+  # Phase 3 — close jaw when aligned (xy < 3cm AND z_gap < 1cm)
+  jaw_align_base: 0.3           # small per-step signal to bootstrap closing from open jaw (must be < lift_pull_weight×0.06=0.36)
+  jaw_align_bonus: 5.0          # personal-best bonus — only fires on new closedness record
+  hold_bonus: 10.0              # one-shot bonus when grip confirmed (dist3d < 2cm, jaw closed)
+
+  # Phase 4 — lift
+  lift_weight: 30.0             # PERSONAL-BEST: lift_weight × new_height_gained
+  lift_pull_weight: 6.0         # continuous penalty = -weight × (lift_height - obj_z) when holding
+  lift_bonus: 20.0              # sparse success bonus
+  drop_penalty: -3.0            # per-step penalty if jaw opens after hold_collected (prevents drop exploit)
+
+  # Housekeeping
+  collision_penalty: -0.2
+  step_penalty: 0.005
+  lift_height: 0.28
+
+# Récompenses pour le modèle PLACE
+rewards_place:
+  goal_dist_weight: 5.0         # potential-based reward for reducing cube→goal distance while holding
+  dist_dense_weight: 0.5        # per-step absolute density: -weight × goal_dist while holding (gradient from still)
+  drop_penalty: -5.0            # flat per-step penalty when cube is dropped (independent of position)
+  release_bonus: 10.0           # sparse bonus when cube released at goal
+  place_threshold: 0.04         # distance (m) to goal considered "placed"
+
+# ── V3: three-stage curriculum (Reach → Grasp → Carry) ───────────────────────
+# Stage 1 — ReachEnv: get gripper over cube with jaw open
+rewards_v3_reach:
+  dist_weight: 3.0          # base pull: -weight × dist3d each step
+  dist_bonus: 15.0          # personal-best approach bonus
+  centering_bonus: 5.0      # personal-best Gaussian centering score (sigma below)
+  centering_sigma: 0.025    # 2.5cm sigma for centering score
+  jaw_open_weight: 0.8      # penalty for closed jaw during approach (dist > 3cm)
+  wrist_orient_penalty: 1.0  # per-step penalty for non-horizontal Wrist_Roll (qpos[4] ≠ ±π/2)
+  wrist_pitch_penalty: 1.2   # per-step penalty for non-zero Wrist_Pitch (qpos[3] ≠ 0); home=1.57 so active immediately
+  approach_height_penalty: 1.5  # penalty when gripper below cube + clearance during lateral approach
+  approach_z_clearance: 0.03    # minimum z gap (gripper_z − cube_z) required when xy_dist > 5cm
+  hold_steps_required: 100  # must stay in zone for 100 steps (2s at 50Hz) to succeed
+  hold_per_step_bonus: 0.1  # small per-step reward while holding in zone (encourages stability)
+  success_dist: 0.025       # widened from 0.015 — easier to hold position after repositioning
+  success_bonus: 20.0       # sparse one-shot bonus when hold_steps_required is reached
+  collision_penalty: -0.2
+  step_penalty: 0.005
+
+# Stage 2 — GraspEnv: close gripper on cube (starts near cube)
+rewards_v3_grasp:
+  jaw_base_weight: 0.5      # small per-step closing signal (bootstrap gradient)
+  jaw_bonus: 8.0            # personal-best closedness bonus
+  dist_penalty_weight: 2.0  # always penalise distance from cube (stay near)
+  wrist_orient_penalty: 2.5 # per-step penalty for non-horizontal wrist (1=vert → -2.5/step)
+  hold_bonus: 15.0          # one-shot when grip confirmed (dist < 2.5cm, jaw closed)
+  drift_penalty: 3.0        # extra penalty per metre of drift when not yet gripped
+  collision_penalty: -0.2
+  step_penalty: 0.005
+  success_dist: 0.025       # dist3d < this AND jaw closed = success
+
+# Stage 3 — CarryEnv: carry held cube to goal and release
+rewards_v3_carry:
+  drop_penalty: -4.0        # per-step penalty for opening jaw before reaching goal
+  goal_dist_weight: 5.0     # continuous base pull: -weight × dist every step
+  goal_dist_progress: 40.0  # per-step progress reward: +weight × (prev_dist - curr_dist) when closing in
+  release_bonus: 25.0       # one-shot: jaw open AND cube at goal
+  place_threshold: 0.04     # distance to goal considered "placed"
+  collision_penalty: -0.2
+  step_penalty: 0.005
+
+# Hyperparamètres PPO (Stable Baselines3)
+learning:
+  algorithm: "PPO"
+  total_timesteps: 1000000      # 1M steps — nécessaire pour une tâche à 6 DOF + multi-reward
+  n_envs: 4                     # Parallel environments for faster data collection
+  n_steps: 4096                 # Plus long rollout = meilleures estimations d'avantage
+  batch_size: 256
+  learning_rate: 0.0003
+  ent_coef: 0.05                # Réduit vs 0.1 — assez d'exploration sans trop de bruit
+  gamma: 0.995                  # Horizon long — la récompense lift est sparse et tardive
+  gae_lambda: 0.95              # Standard GAE
+  clip_range: 0.2               # Standard PPO clip

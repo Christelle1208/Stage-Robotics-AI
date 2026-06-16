@@ -1,0 +1,1401 @@
+Data-driven Planning via Imitation Learning
+Sanjiban Choudhury∗, Mohak Bhardwaj∗, Sankalp Arora∗, Ashish Kapoor†, Gireeja Ranade†, Sebastian Scherer∗ and Debadeepta Dey† ∗The Robotics Institute Carnegie Mellon University, Pittsburgh, PA 15232 Email: {sanjibac,asankalp, mbhardwa, basti}@andrew.cmu.edu †Microsoft Research, Redmond USA Email: {akapoor,giranade,dedey}@microsoft.com
+Abstract—Robot planning is the process of selecting a sequence of actions that optimize for a task specific objective. For instance, the objective for a navigation task would be to find collision free paths, while the objective for an exploration task would be to map unknown areas. The optimal solutions to such tasks are heavily influenced by the implicit structure in the environment, i.e. the configuration of objects in the world. State-of-the-art planning approaches, however, do not exploit this structure, thereby expending valuable effort searching the action space instead of focusing on potentially good actions. In this paper, we address the problem of enabling planners to adapt their search strategies by inferring such good actions in an efficient manner using only the information uncovered by the search up until that time. We formulate this as a problem of sequential decision making under uncertainty where at a given iteration a planning policy must map the state of the search to a planning action. Unfortunately, the training process for such partial information based policies is slow to converge and susceptible to poor local minima. Our key insight is that if we could fully observe the underlying world map, we would easily be able to disambiguate between good and bad actions. We hence present a novel datadriven imitation learning framework to efficiently train planning policies by imitating a clairvoyant oracle - an oracle that at train time has full knowledge about the world map and can compute optimal decisions. We leverage the fact that for planning problems, such oracles can be efficiently computed and derive performance guarantees for the learnt policy. We examine two important domains that rely on partial information based policies - informative path planning and search based motion planning. We validate the approach on a spectrum of environments for both problem domains, including experiments on a real UAV, and show that the learnt policy consistently outperforms stateof-the-art algorithms. Our framework is able to train policies that achieve upto 39% more reward than state-of-the art information gathering heuristics and a 70x speedup as compared to A* on search based planning problems. Our approach paves the way forward for applying data-driven techniques to other such problem domains under the umbrella of robot planning.
+I. INTRODUCTION
+Motion planning, the task of computing a sequence of collision-free motions for a robotic system from a start to a goal configuration, has a rich and varied history [71]. Up until now, the bulk of the prominent research has focused on the development of tractable planning algorithms with provable worst-case performance guarantees such as computational complexity [11], probabilistic completeness [72] or asymptotic optimality [58]. In contrast, analysis of the expected perfor
+mance of these algorithms on real world planning problems a robot encounters has received considerably less attention, primarily due to the lack of standardized datasets or robotic platforms. Informative path planning, the task of computing an optimal sequence of sensing locations to visit so as to maximize information gain, has also had an extensive amount of prior work on algorithms with provable worst-case performance guarantees such as computational complexities [105] and the probabilistic completeness [45] of information theoretic planning. While these algorithms use heuristics to approximate information gain using variants of Shannon’s entropy, their expected performance on real world planning problems is heavily influenced by the geometric distribution of objects encountered in the world. A unifying theme for both these problem domains is that as robots break out of contrived laboratory settings and operate in the real world, the scenarios encountered by them vary widely and have a significant impact on performance. Hence, a key requirement for autonomous systems is a robust planning module that maintains consistent performance across the diverse range of scenarios it is likely to encounter. To do so, planning modules must possess the ability to leverage information about the implicit structure of the world in which the robot operates and adapt the planning strategy accordingly. Moreover, this must occur in a pure data-driven fashion without the need for human intervention. Fortunately, recent advances in affordable sensors and actuators have enabled mass deployment of robots that navigate, interact and collect real data. This motivates us to examine the following question:
+How can we design planning algorithms that, subject to on-board computation and sensing constraints, maximize their expected performance on the actual distribution of problems that a robot encounters?
+A. Motivation
+We look at two domains - informative path planning and search based planning. We briefly delve into these motivations and make the case for data-driven approaches in both.
+1) Informative Path Planning: We consider the following information gathering problem - given a hidden world map, sampled from a prior distribution, the goal is to successively visit sensing locations such that the amount of relevant
+arXiv:1711.06391v1 [cs.RO] 17 Nov 2017
+
+
+Training Dataset
+⇡
+Learnt Policy
+Learns concentrated spiral motion
+Learns large sweeping motion
+⇡
+Learnt Policy
+Training Dataset
+(a)
+(b)
+Worlds with ‘bug traps’
+Heuristic does not get trapped, searches along periphery
+Worlds with paths around centre line
+Heuristic greedily searches around centre line
+INFLATED EUCLIDEAN HEURISTIC LEARNT HEURISTIC POLICY
+Heuristic gets trapped in ‘bug trap’ due to greediness
+Heuristic is not greedy enough and expands more states
+Fig. 1. Sequential decision making in informative path planning and search based planning. The implicit structure of the environment affects the performance of policies in both tasks. (a) The effectiveness of a policy to gather information depends on the distribution of worlds. (left) When the distribution corresponds to a scene containing ladders, the learnt policy executes a helical motion around parts of the ladder already observed as it is unlikely that there is information elsewhere. (right) When the distribution corresponds to a scene from a construction site, the learnt policy executes a large sweeping motion as information is likely to be dispersed. (b) A learnt heuristic policy adapts to different obstacle configurations to minimize search effort. All schematics show the evolution of a search algorithm as the expansion of a search wavefront (expanded(white), invalid(black), unexpanded(grey)) from start (green) to goal (blue). A commonly used inflated Euclidean heuristic cannot adapt to different environments, e.g it gets stuck in bugtraps. On the other hand, the learnt policy is able to infer the presence of a bug trap when trained on such a distribution and switch to greedy behaviour when trained on other distributions.
+information uncovered is maximized while not exceeding a specified fuel budget. This problem fundamentally recurs in mobile robot applications such as autonomous mapping of environments using ground and aerial robots [13, 43], monitoring of water bodies [45] and inspecting models for 3D reconstruction [50, 47].
+The nature of “interesting” objects in an environment and
+their spatial distribution influence the optimal trajectory a robot might take to explore the environment. As a result, it is important that a robot learns about the type of environment it is exploring as it acquires more information and adapts its exploration trajectories accordingly.
+To illustrate our point, we sketch out two extreme examples of environments for a particular mapping problem, shown in
+
+
+Fig. 1(a). Consider a robot equipped with a sensor (RGBD camera) that needs to generate a map of an unknown environment. It is given a prior distribution about the geometry of the world, but has no other information. This geometry could include very diverse settings. First it can include a world where there is only one ladder, but the form of the ladder must be explored, which is a very dense setting. Second, it could include a sparse setting with spatially distributed objects, such as a construction site. The important task for the robot is to now try to infer which type of environment it is in based on the history of measurements, and thus plan an efficient trajectory. At every time step, the robot visits a sensing location and receives a sensor measurement (e.g. depth image) that has some amount of information utility (e.g. surface coverage of objects with point cloud). As opposed to naive lawnmower-coverage patterns, it will be more efficient if the robot could use a policy that maps the history of locations visited and measurements received to decide which location to visit next such that it maximizes the amount of information gathered in the finite amount of battery time available. The ability of such a learnt policy to gather information efficiently depends on the prior distribution of worlds in which the robot has been shown how to navigate optimally. Fig. 1(a) (left) shows an efficient learnt policy for inspecting a ladder, which executes a helical motion around parts of the ladder already observed to efficiently uncover new parts without searching naively. This is efficient because given the prior distribution the robot learns that information is likely to be geometrically concentrated in a particular volume given its initial observations of parts of the ladder. Similarly Fig. 1(a) (right) shows an effective policy for exploring construction sites by executing large sweeping motions. Here again the robot learns from prior experience that wide, sweeping motions are efficient since it has learnt that information is likely to be dispersed in such scenarios. We wish to arrive at an efficient procedure for training such a policy. 2) Search Based Planning: Search based motion planning offers a comprehensive framework for reasoning about a vast number of motion planning algorithms [71]. In this framework, an algorithm grows a search tree of feasible robot motions from a start configuration towards a goal [91]. This is done in an incremental fashion by first selecting a leaf node of the tree, expanding this node by computing outgoing edges, checking each edge for validity and finally updating the tree with potentially new leaf nodes. It is useful to visualize this search process as a wavefront of expanded nodes that grows from the start outwards till it finds the goal as illustrated in Fig. 1(b). This paper addresses a class of robotic motion planning problems where edge evaluation dominates the search effort, such as for robots with complex geometries like robot arms [27] or for robots with limited onboard computation like UAVs [24]. In order to ensure real-time performance, algorithms must prioritize minimizing the search effort, i.e. keeping the volume of the search wavefront as small as possi
+ble while it grows towards the goal. This is typically achieved by heuristics, which guide the search towards promising areas by selecting which nodes to expand. As shown in Fig. 1, this acts as a force stretching the search wavefront towards the goal. A good heuristic must balance the bi-objective criteria of finding a good solution and minimizing the search effort. The bulk of the prior work has focused on the former objective of guaranteeing that the search returns a near-optimal solution [91]. These approaches define a heuristic function as a distance metric that estimates the cost-to-go value of a node [96]. However, estimation of this distance metric is difficult as it is a complex function of robot geometry, dynamics and obstacle configuration. Commonly used heuristics such as the euclidean distance do not adapt to different robot configurations or different environments. On the other hand, by trying to compute a more accurate distance the heuristic should not end up doing more computation than the original search. While state-of-the-art methods propose different relaxationbased [77, 29] and learning-based approaches [89] to estimate the distance metric they run into a much more fundamental limitation - a small estimation error can lead to a large search wavefront. Minimizing the estimation error does not necessarily minimize search effort. Instead, we focus on the latter objective of designing heuristics that explicitly reduce search effort in the interest of real-time performance. Our key insight is that heuristics should adapt during search - as the search progresses, they should actively infer the structure of the valid configuration space, and focus the search on potentially good areas. Moreover, we want to learn this behaviour from data - changing the data distribution should change the heuristic automatically. Consider the example shown in Fig. 1(b). When a heuristic is trained on a world with ‘bug traps’, it learns to recognize when the search is trapped and circumvent it. On the other hand, when it is trained on a world with narrow gaps, it learns a greedy behaviour that drives the search to the goal.
+B. Key Idea
+It is natural to think of both these problems as a Partially Observable Markov Decision Process (POMDP). However the POMDP is defined on a belief over possible world maps, which is very large in size rendering even the most efficient of online POMDP solvers impractical. Our key insight is that if the policies could fully observe and process the world map during decision making, they could quite easily disambiguate good actions from bad ones. This motivates us to frame the problem of learning a planning policy as a novel data-driven imitation [99] of a clairvoyant oracle. During the training process, the oracle has full knowledge about the world map (hence clairvoyant) and selects actions that maximize cumulative rewards. The policy is then trained to imitate these actions as best as it can using partial knowledge from the current history of actions and observations. As a result of our novel formulation, we are able to sidestep a number of challenging issues in POMDPs
+
+
+like explicitly computing posterior distribution over worlds and planning in belief space. We empirically show that training such policies using imitation learning of clairvoyant oracles leads to much faster convergence and robustness to poor local minima than training policies via model free policy improvement. We leverage the fact that such oracles can be efficiently computed for our domains once the source of uncertainty is removed. We show in our analysis that imitation of such clairvoyant oracles during training is equivalent to being competitive with a hallucinating oracle at test time, i.e. an oracle that implicitly maintains a posterior over world maps and selects the best action at every time step. This offers some valuable insight behind the success of this approach as well as instances where such an approach would lead to a near-optimal policy.
+C. Contributions
+Our contributions are as follows: 1) We motivate the need to learn a planning policy that adapts to the environment in which the robot operates. We examine two domains - informative path planning and search based planning. We examine both problems through the lens of sequential decision making under uncertainty (Section II). 2) We present a novel mapping of both these problems to a common POMDP framework (Section III). 3) We propose a novel framework for training such POMDP policies via imitation learning of a clairvoyant oracle. We analyze the implications of imitating such an oracle (Section IV). 4) We present training procedures that deal with the non i.i.d distribution of states induced by the policy itself along with performance guarantees. We present concrete instances of the algorithm for both problem domains. We also show that for a certain class of informative path planning problems, policies trained in this fashion possess near-optimality properties (Section V). 5) We extensively evaluate the approach on both problem domains. In each domain, we evaluate on a spectrum of environments and show that policies outperform state-ofthe-art approaches by exhibiting adaptive behaviours. We also demonstrate the impact of this framework on real world problems by presenting flight test results from a UAV (Section VI and Section VII). This paper is an unification of previous works on adaptive information gathering [21, 20] and learning heuristic search [8]. We present a unified framework for reasoning about both problems. We compare and contrast training procedures due to both domains. We present new results in learning heuristics on 4D planning problems and present flight test results from a UAV. We present new results on comparing the imitation learning with policy search and comparing sample efficiency of AGGREVATE and FORWARDTRAINING. We present more details on implementation and analysis of results. We provide comprehensive discussions on shortcomings of this approach and directions for future work in Section VIII.
+II. BACKGROUND
+A. Informative Path Planning
+We now present a framework for informative path planning where the objective is to visit maximally informative sensing locations subjected to time and travel constraints. We use this framework to pose the problem of computing a information gathering policy for a given distribution over worlds and briefly discuss prior work on this topic. 1) Framework: We now introduce a framework and set of notations to express the IPP problems of interest. The specific implementation details of the problem are described in detail in Section VI-A. We have a robot that is constrained to move on a graph G = (V, E) where V is the set of nodes corresponding to all sensing locations. The start node is vs. Let ξ = (v1, v2, . . . , vp) be a sequence of connected nodes (a path) such that v1 = vs. Let Ξ be the set of all such paths. Let φ ∈ M be the world map in which the robot operates. The world map is usually represented in practice as a binary grid map where grid cells are either occupied or free. We assume that the world map is fixed during an episode. Let y ∈ Y be a measurement received by the robot. Let H : V × M → Y be a measurement function. When the robot is at node v in a world map φ, the measurement y received by the robot is y = H (v, φ). The measurement function is defined by a sensor model, e.g. a range limited sensor. A measurement is obtained by projecting the sensor model on the sensing node v and ray-casting to determine the surfaces of the underlying world φ that intersect with the sensor rays. The objective of the robot is to move on the graph and maximize utility. Let F : 2V ×M → R≥0 be a utility function. For a path ξ and a world map φ, F (ξ, φ) assigns a utility to executing the path on the world. The utility of a measurement from a node is usually the amount of surface of the world covered by it. In such an instance, the function does not depend on the sequence of vertices in the path, i.e. is a set function. For simplicity, we assume that the measurement and utility function is deterministic. However, this assumption can easily be relaxed in our approach and is discussed in Section. VIII-D. As the robot moves on the graph, the travel cost is captured by the cost function T : Ξ × M → R≥0. For a path ξ and a world map φ, T (ξ, φ) assigns a travel cost for executing the path on the world. In a practical setting, the total number of timesteps is bounded by T and the travel cost is bounded by B. Fig. 2 shows an illustration of the framework. We are now ready to define the informative path planning problems. There are two axes of variations
+1) Constraint on the motion of the robot 2) Observability of the world map
+The first axis arises from whether the robot is subject to any travel constraints. For problems such as sensor placement, the agent is free to select any sequence of nodes and the travel cost between nodes is 0. For such situations, the graph is also fully connected to permit any sequence. For problems involving physical movements, the agent is constrained by a
+
+
+Node Set Utility
+v1
+v2
+v3
+y1 y2
+y3
+World Map
+Path
+(V )
+()
+(F (⇠, ))
+(⇠)
+Measurement
+Fig. 2. The informative path planning problem. Given a world map φ, the robot plans a path ξ which visits a node vi ∈ V and receives measurement yi, such that utility (information gathered) F (ξ, φ) is maximized. Here the utility is the cardinality of all the cells uncovered (green), which is a union of the cells uncovered at each location (and hence a set cover function)
+budget on the travel cost. Additionally the graph may also not be fully connected. The second axis arises from different task specifications which result in the world map being observable or being hidden. We categorize the problems on this axis to aid future discussions on imitating clairvoyant oracles in Section V.
+2) Problems with Known World Maps: For the first two variants, the world map φ is known and can be evaluated while computing a path ξ.
+Problem 1 (KNOWN-UNC: Known World Map; Unconstrained Travel Cost). Given a world map φ, a fully connected graph G and a time horizon T , find a path ξ that maximizes utility
+arg max
+ξ∈Ξ
+F (ξ, φ)
+s.t. |ξ| ≤ T + 1
+(1)
+In the case where the utility function is a set function, Problem 1 is a set function maximization problem which in general can be NP-Hard [64]). Such problems occur commonly in the sensor placement problem [66]. However, in many instances the utility function can be shown to posses the powerful property of monotone submodularity. This property implies the following
+1) Monotonic improvement: The value of the utility can only increase on adding nodes, i.e.
+F (V1 ∪ V2, φ) ≥ F (V1, φ)
+for all V1, V2 ⊆ V 2) Diminishing returns: The gain in adding a set of nodes diminshes
+F (V1 ∪ V3, φ) − F (V3, φ) ≤F (V1 ∪ V2, φ) − F (V2, φ)
+for all V1, V2, V3 ⊆ V where V2 ⊆ V3.
+For such functions, it has been shown that a greedy algorithm achieves near-optimality [66, 65].
+Problem 2 (KNOWN-CON: Known World Map; Constrained Travel Cost). Given a world map φ, a time horizon T and a travel cost budget B, find a path ξ that maximizes utility
+arg max
+ξ∈Ξ
+F (ξ, φ)
+s.t. T (ξ, φ) ≤ B |ξ| ≤ T + 1
+(2)
+Problem 2 introduces a routing constraint (due to T ) for which greedy approaches can perform arbitrarily poorly. Such problems occur when a physical system has to travel between nodes. Chekuri and Pal [14], Singh et al. [105] propose a quasi-polynomial time recursive greedy approach to solving this problem. Iyer and Bilmes [51] solve a related problem (submodular knapsack constraints) using an iterative greedy approach which is generalized by Zhang and Vorobeychik [129]. Yu et al. [128] propose a mixed integer approach to solve a related correlated orienteering problem. Hollinger and Sukhatme [45] propose a sampling based approach. Arora and Scherer [5] use an efficient TSP with a random sampling approach.
+3) Problems with Hidden World Maps: We now consider the setting where the world map φ is hidden. Given a prior distribution P (φ), it can be inferred only via the measurements yi received as the robot visits nodes vi. Hence, instead of solving for a fixed path, we compute a policy that maps history of measurements received and nodes visited to decide which node to visit.
+Problem 3 (HIDDEN-UNC: Hidden World Map; Unconstrained Travel Cost). Given a distribution of world maps, P (φ), a fully connected graph G, a time horizon T , find a policy that at time t, maps the history of nodes visited {vi}it=1
+and measurements received {yi}it=1 to compute the next node vt+1 to visit at time t + 1, such that the expected utility is maximized.
+Such a problem occurs for sensor placement where sensors can optionally fail [36]. Due to the hidden world map φ, it is not straight forward to apply the approaches of Problem KNOWN-UNC- we have to reason both about P (φ | {vi}it=1, {yi}it=1) and how the function will evolve.
+However, in some instances the utility function F has an additional property of adaptive submodularity [36]. This is an extension of the submodularity property where the gain of the function is measured in expectation over the conditional distribution over world maps P (φ | {vi}it=1, {yi}it=1). Under such situations, applying greedy strategies to Problem 3 has near-optimality guarantees [37, 52, 53, 16, 17] ). However, these strategies require explicitly sampling from the posterior distribution over φ which make it intractable to apply for our setting.
+Problem 4 (HIDDEN-CON: Hidden World Map; Constrained Travel Cost). Given a distribution of world maps, P (φ), a time horizon T , and a travel cost budget B, find a policy that at time t, maps the history of nodes visited {vi}it=1 and
+
+
+measurements received {yi}it=1 to compute the next node vt+1 to visit at time t+1, such that the expected utility is maximized.
+Such problems crop up in a wide number of areas such as sensor planning for 3D surface reconstruction [50] and indoor mapping with UAVs [13, 87]. Problem 4 does not enjoy the adaptive submodularity property due to the introduction of travel constraints. Hollinger et al. [47, 46] propose a heuristic based approach to select a subset of informative nodes and perform minimum cost tours. Singh et al. [106] replan every step using a non-adaptive information path planning algorithm. Inspired by adaptive TSP approaches by Gupta et al. [39], Lim et al. [79, 78] propose recursive coverage algorithms to learn policy trees. However such methods cannot scale well to large state and observation spaces. Heng et al. [43] make a modular approximation of the objective function. Isler et al. [50] survey a broad number of myopic information gain based heuristics that work well in practice but have no formal guarantees.
+B. Search Based Planning
+We now present a framework for search based planning where the objective is to find a feasible path from start to goal while minimizing search effort. We use this framework to pose the problem of learning the optimal heuristic for a given distribution over worlds and briefly discuss prior work on this topic. 1) Framework: We consider the problem of search on a graph, G = (V, E), where vertices V represent robot configurations and edges E represent potentially valid movements of the robot between these configurations. Given a pair of start and goal vertices, (vs, vg) ∈ V, the objective is to compute a path ξ ⊆ E - a connected sequence of valid edges. The implicit graph G can be compactly represented by (vs, vg) and a successor function Succ(v) which returns a list of outgoing edges and child vertices for a vertex v ∈ V. Hence a graph G is constructed during search by repeatedly expanding vertices using Succ(v). Let φ ∈ M be a representation of the world that is used to ascertain the validity of an edge. An edge e ∈ E is checked for validity by invoking an evaluation function Eval(e, φ) which is an expensive operation and may require complex geometric intersection operations [26]. Alg. 1 defines a general search based planning algorithm Search which takes as input the tuple 〈vs, vg, Succ, Eval, φ, Select〉 and returns a valid path ξ. To ensure systematic search, the algorithm maintains the following lists - an open list O ⊂ V of candidate vertices to be expanded and a closed list C ⊂ V of vertices which have already been expanded. It also retains an additional invalid list I ⊂ E of edges found to be in collision. These 3 lists together represent the complete information available to the algorithm at any given point of time. At a given iteration, the algorithm uses this information to select a vertex v ∈ O to expand by invoking Select(O). It then expands v by invoking Succ(v) and checking validity of edges using Eval(e, φ) to get a set of valid successor vertices Vsucc as well as invalid edges Einv. The lists are then updated and the process repeated till the goal vertex vg is uncovered. Fig. 3 illustrates this framework.
+World Map ()
+(vs) Goal (vg)
+Start
+Open List
+(O)
+(C)
+(I )
+Closed List
+Invalid List
+Fig. 3. The search based planning problem. Given a world map φ, the agent has to guide a search tree from start vs to goal vg by expanding vertices. At any given iteration, the open list O represents the set of candidate vertices that can be expanded. The closed list C represents the set of vertices already expanded. The invalid list represents the set of edges that were found to be in collision with the world. The status of every other vertex is unknown. The search continues till the goal belongs to the open list, i.e. a feasible path to goal has been found.
+Algorithm 1 Search〈vs, vg, Succ, Eval, φ, Select〉
+1: O ← vs, C ← ∅, I ← ∅ 2: while vg ∈/ O do
+3: v ← Select(O) 4: (Vsucc, Einv) ← Expand(v, Succ, Eval, φ) 5: O ← O ∪ Vsucc, C ← C ∪ v, I ← I ∪ Einv 6: Return Path (vs, vg)
+2) The Optimal Heuristic Problem: In this work, we focus on the feasible path problem and ignore the optimality of the path. Although this is a restrictive setting, quickly finding the feasible path is a very important problem in robotics. Efficient feasible path planners such as RRT-Connect [67] has proven highly effective in high dimensional motion planning applications such as robotic arm planning [71] and mobile robot planning [70]. Hence we ignore the traversal cost of an edge and deal with unweighted graphs. We defer discussions on how to relax this restriction to Section VIII-B. We view a heuristic policy as a selection function (Alg. 1, Line 3) that selects a vertex v from the open list O. The objective of the policy is to minimize the number of expansions until the search terminates. Note that the evolution of the open list O depends on the underlying world map φ which is hidden. Given a prior distribution over world maps P (φ), it can be inferred only via the outcome of the expansion operation (Vsucc, Einv). The history of outcomes is captured by the state of the search, i.e. the combination of the 3 lists {O, C, I}.
+Problem 5 (OPT-HEUR). Given a distribution of world maps, P (φ), find a heuristic policy that at time t, maps the state of the search {Ot, Ct, It} to select a vertex vt ∈ Ot to expand, such that the expected number of expansions till termination is minimized.
+The problem of heuristic design has a lot of historical significance. A common theme is “Optimism Under Uncertainty”. A spectrum of techniques exist to manually design good heuristics by relaxing the problem to obtain guarantees with respect to optimality and search effort [91]. To get practical
+
+
+performance, these heuristics are inflated, as has been the case in the applications in mobile robot planning [77]. However, being optimistic under uncertainty is not a foolproof approach and could be disastrous in terms of search efforts depending on the environment (See Fig 2.5, LaValle [71]). Learning heuristics falls under machine learning for general purpose planning [55]. Yoon et al. [127] propose using regression to learn residuals over FF-Heuristic [44]. Xu et al. [124, 126, 125] improve upon this in a beam-search framework. Arfaee et al. [4] iteratively improve heuristics. u ́s Virseda et al. [118] learn combination of heuristic to estimate costto-go. Kendall rank coefficient is used to learn open list ranking [123, 35]. Thayer et al. [114] learn heuristics online during search. Paden et al. [89] learn admissible heuristics as S.O.S problems. However, these methods do not address minimization of search effort and also ignore the non i.i.d nature of the problem.
+C. Partially Observable Markov Decision Process
+POMDPs [56] provide a rich framework for sequential decision making under uncertainty. However, solving a POMDP is often intractable - finite horizon POMDPs are PSPACEcomplete [90] and infinite horizon POMDPs are undecidable [83]. Despite this challenge, the field has forged on and produced a vast amount of work by investigating effective approximations and analyzing the structure of the optimal solution. We refer the reader to [100] for a concise survey of modern approaches. There are two main approaches to POMDP planning: offline policy computation and online search. In offline planning, the agent computes before hand a policy by considering all possible scenarios and executes the policy based on the observation received. Athough offline methods have shown success in planning near-optimal policies in several domains [107, 68, 109], they are difficult to scale up due to the exponential number of future scenarios that must be considered. Online methods interleave planning and execution. The agent plans with the current belief, executes the action and updates the belief. Monte-carlo sampling methods explicitly maintain probability over states and plan via monte carlo rollouts [84, 7]. This limits scalability since belief update can take time. In contrast, POMCP [103] maintains a set of particles to represent belief and employ UCT methods to plan with these particles. This allows the method to scale up for larger state spaces. However, the disadvantage of purely online methods is that they require a lot of search effort online and can lead to poor performance due to evaluation on a small number of particles. [108] present a state-of-the-art algorithm DESPOT that combines the best aspects of many algorithms. First it uses determinized sampling techniques to ensure that the branching factor of the tree is bounded [88, 60]. Secondly, it uses offline precomputed policies to roll-out from a vertex, thus lower bounding its value. Finally, it tries to regularize the search by weighing the utility of a node to be robust against the fact that a finite number of samples is being used.
+The methods we have talked about explicitly models the belief. For large scale POMDPs, this might be an issue. Model free approaches and representation learning offer attractive alternatives. Model free policy improvement has been successfully used to solve POMDPs [82, 74]. Predictive state representations [80, 9] that minimize prediction loss of future observations offer more compact representations than maintaining belief. There also has been a lot of success in employing deep learning to learn powerful representations [42, 59].
+D. Reinforcement Learning and Imitation Learning
+Reinforcement Learning (RL) [112] especially deep RL has dramatically advanced the capabilities of sequential decision making in high dimensional spaces such as controls [30], video games [104] and strategy games [104]. Several conventional supervised learning tasks are now being solved using deep RL to achieve higher performance [97, 75]. In sequential decision making, the prediction of a learner is dependent on the history of previous outcomes. Deep RL algorithms are able to train such predictors by reasoning about the future accumulated cost in a principle manner. We refer the reader to [62] for a concise survey on RL and to [6] for a survey on deep RL. Training such policies can be classified into two approaches - either value functionbased approach, where a value function for an action is learnt, or policy search, where a policy is directly learnt. The value function methods can themselves be categorized in two categories - model-free algorithms and model-based algorithms. Model-free methods are computationally cheap but ignore the dynamics of the world thus requiring a lot of samples. Q-learning [122] is a representative algorithm for estimating the long-term expected return for executing an action from a given state. When the number of state action pairs are too large in number to track each uniquely, a function approximator is required to estimate the value. Deep Q-learning [85, 121] addresses such a need by employing a neural-network as a function approximator and learning these network weights. However, the process of using the same network to generate both target values and update Q-values results in oscillations. Hence a number of remedies are required to maintain stability such as having a buffer of experience, a separate target network and an adaptive learning rate. These are indicative of the underlying sample inefficiency problem of a model-free approach. Model-based methods such as R-Max [10] learn a model of the world which is then used to plan for actions. While such methods are sample efficient, they require a lot of exploration to learn the model. Even in the case when the model of the environment is known, solving for the optimal policy might be computationally expensive for large spaces. Policy search approaches are commonly used where its easier to parameterize a policy than learn a value function [92], however such approaches are sensitive to initialization and can lead to poor local minima.
+
+
+In contrast with RL methods, imitation learning (IL) algorithms [25, 120, 12, 99] reduce the sequential prediction problem to supervised learning by leveraging the fact that, for many tasks, at training time we usually have a (near) optimal cost-to-go oracle. This oracle can either come from a human expert guiding the robot [2] or from ground truth data as in natural language processing [12]. The existence of such oracles can be exploited to alleviate learning by trial and error - imitation of an oracle can significantly speed up learning. A traditional approach to using such oracles is to learn a policy or value function from a pre-collected dataset of oracle demonstrations [98, 131, 34]. A problem with these methods is that they require training and test data to be sampled from the same distribtution which is difficult in practice. In contrast, interactive approaches to data collection and training has been shown to overcome stability issues and works well empirically [101, 99, 111]. Furthermore, these approaches lead to strong performance through a reduction to no-regret online learning. Recent approaches have also employed imitation of clairvoyant oracles, that has access to more information than the learner during training, to improve reinforcement learning as they offer better sample efficiency and safety. Zhang et al. [130], Kahn et al. [57] train policies that map current observation to action by extending guided policy search [73] for imitation of model predictive control oracles. Tamar et al. [113] consider a cost-shaping approach for short horizon MPC by offline imitation of long horizon MPC which is closest to our work. Gupta et al. [40] develop a holistic mapping and planner framework trained using feedback from optimal plans on a graph. [111] also theoretically analyze the question of why imitation learning aids in reinforcement learning. They develop a comprehensive theoretical study of IL on discrete MDPs and construct scenarios to show that IL acheives better sample efficiency than any RL algorithm. Concretely, they conclude that one can expect atleast a polynomial gap ad a possible exponential gap in regret between IL and RL when one has access to unbiased estimates of the optimal policy during training.
+III. PROBLEM FORMULATION
+A. POMDPs
+A discrete-time finite horizon POMDP is defined by the tuple (S, A, Ω, R, O, Z, T ) where
+• S is a set of states • A is a set of actions • Ω is a set of state transition probabilities • R : S × A is the reward function • O is the set of observations • Z is a set of conditional observation probabilities • T is the time horizon
+At each time period, the environment is in some state s ∈ S which cannot be directly observed. The initial state is sampled from a distribution P (s). The agent takes an action a ∈ A
+which causes the environment to transition to state s′ ∈ S with probability Ω (s, a, s′) = P (st+1 = s′|st = s, at = a). The agent receives a reward R (s, a). On reaching the new state s′, it receives an observation o ∈ O according to the probability Z (s′, a, o) = P (ot+1 = o|st+1 = s′, at = a).
+A history ψ ∈ Ψ is a sequence of actions and observations ψt = {< o1 >, < a1, o2 >, . . . , < at−1, ot >}. Note that the initial history ψt =< o1 > is simply the observation at the initial timestep. The history ψt captures all information required to express the belief over state. The belief P (st+1|ψt+1) can be computed recursively applying Bayes’ rule
+η Z (st+1, at, ot+1) ∑
+st ∈S
+Ω (st, at, st+1) P (st|ψt)
+where η is a normalization constant. The history can then also be used to compute an update P (ψt+1|ψt, at):
+∑
+st ∈S
+∑
+st+1 ∈S
+P (st|ψt)Ω (st, at, st+1) Z (st+1, at, ot+1)
+The agent’s action selection behaviour can be explained by a policy π(ψt) ∈ Π that maps history ψt to action at. Let the state and history distribution induced by a policy π after t timesteps be P (s, ψ|π, t). The value of a policy π is the expected cumulative reward for executing π for T timesteps on the induced state and history distribution
+J (π) =
+T
+∑
+t=1
+Est,ψt∼P (s,ψ|π,t) [R (st, π(ψt))] (3)
+The optimal policy maximizes the expected cumulative
+reward, i.e π∗ ∈ arg max π∈Π
+J (π).
+Given a starting history ψ, let P (s′, ψ′|ψ, π, i) be the induced state history distribution after i timesteps. The value of executing a policy π for t time steps from a history ψ is the expected cumulative reward:
+V ̃tπ(ψ) =
+t
+∑
+i=1
+Esi,ψi∼P (s′,ψ′|ψ,π,i) [R (si, π(ψi))] (4)
+The state-action value function Q ̃tπ(ψt, at) is defined as the expected sum of one-step-reward and value-to-go:
+Q ̃tπ(ψ, a) =Es∼P (s|ψ) [R (s, a)] +
+Eψ′∼P (ψ′|ψ,a)
+[V ̃tπ−1(ψ′)
+] (5)
+B. Mapping Informative Path Planning to POMDPs
+We now map IPP problems HIDDEN-UNC and HIDDENCON to a POMDP. The state is defined to contain all information that is required to define the reward, observation and transition functions. Let the state be the set of nodes visited and the underlying world, st = {v1, . . . , vt, φ}. At the start of an episode, a world is sampled from a prior distribution φ ∼ P (φ) along with a graph G ∼ P (G). The initial state is assigned by setting s1 = {v1, φ}. Note that the state st is partially observable due to the hidden world map φ.
+
+
+We define the action at = vt+1 to be the next node to visit. We are now ready to map the utility and travel cost to the reward function definition. Given the agent is in state st and has executed at, we can extract the path ξ = (v1, v2, . . . , vt+1) and the underlying world φ. Hence we can compute the utility function F (ξ, φ). We can also compute the travel cost function T (ξ, φ).
+Before we define the reward function, we note that for Problem HIDDEN-CON not all actions are feasible at all times due to connectivity of the graph and constraints due to travel cost. Hence we can define a feasible set of actions Afeas (s) ⊂ A for a state as follows
+Afeas (s) = {a | a ∈ A, (vt, vt+1) ∈ E, T (ξ, φ) ≤ B} (6)
+For Problem HIDDEN-UNC, let Afeas (s) = A. Since the objective is to maximize the cumulative reward function, we define the reward to be proportional to the marginal utility of visiting a node. Given a node v ∈ V, a path ξ and world φ, the marginal gain of the utility function F is ∆F (v | ξ, φ) = F (ξ ∪ {v}, φ) − F (ξ, φ). The one-stepreward function, R (s, a), is defined as the marginal gain of the utility function. Additionally, the reward is set to −∞ whenever an infeasible action is selected. Hence:
+R (s, a) = .
+{
+∆F (a | ξ, φ) if a ∈ Afeas (s)
+−∞ otherwise (7)
+The state transition function, Ω (s, a, s′), is defined as the deterministic function which sets vt+1 = at. We define the observation to be the measurement ot = yt and the observation model Z to be a deterministic function ot = H (vt, φ). Note that the history ψt, the sequence of actions and obser
+vations, is captured in the sequence of nodes visited {vi}it=1
+and measurements received {yi}it=1. In our implementation, we encode this information in an occupancy map as described later in Section VI-A. The information gathering policy π(ψt) maps this history to an action at, the sensing location to visit.
+C. Mapping Search Based Planning to POMDPs
+We now map the problem of computing a heuristic policy to a POMDP setting. Let the state be the open list and the underlying world, st = {Ot, φ}. At the start of an episode, a world is sampled from a prior distribution φ ∼ P (φ) along with a start state vs. The initial state is assigned by setting s1 = {vs, φ}. Note that the state st is partially observable due to the hidden world map φ. We define the action at as the vertex v ∈ Ot that is to be expanded by the search. The state transition function, Ω (s, a, s′), is defined as the deterministic function which sets Ot+1 by querying Expand(v, Succ, Eval, φ). The one-stepreward function, R (s, a), is defined as −1 for every (st, at) until the goal is added to the open list. Additionally, the reward is set to −∞ whenever an infeasible action is selected. Hence:
+R (s, a) = .
+
+ 
+ 
+−∞ if a ∈/ O 0 if vg ∈ O
+−1 otherwise
+(8)
+We define the observation to be the successor nodes and invalid edges, i.e. ot = {Vsucc, Einv} and the observation model Z to be a deterministic function (Vsucc, Einv) = Expand(v, Succ, Eval, φ).
+Note that the history, the sequence of actions and observations, is contained in the information present in the concatenation of all lists, i.e ψt = {O, C, I}. The heuristic is a policy π(ψt) that maps this history to an action at, the vertex to expand. Note that it is more natural to think of this problem as minimizing a one-step-cost than maximizing a reward. Hence when we subsequently refer to this problem instance, we refer to the cost c(s, a) = −R (s, a) and the cost-to-go
+Q ̃tπ(ψ, a). This only results in a change from maximization to minimization.
+D. What makes these POMDPs intractable?
+A natural question to ask if these problems can be solved by state-of-the-art POMDP solvers such as POMCP [103] or DESPOT [108]. While such solvers are very effective at scaling up and solving large scale POMDPs, there are a few reasons why there are not immediately applicable to our problem. Firstly, these methods require a lot of online effort. In the case of search based planning, the effort required to plan in belief space defeats the purpose of a heuristic all together. In the case of informative path planning, the observation space is very large and belief updates would be time consuming. Secondly, since both methods employ a particle filter based approach to tracking plausible world maps, they both are susceptible to a realizability problem. Its unlikely that there will be a world map particle that will explain all observations. That being said, the world maps can explain local correlations in observations. For example, when planning indoors the world maps can explain correlations in observations made at intersection of corridors. Hence, we would like to generalize across these local submaps.
+IV. IMITATION OF CLAIRVOYANT ORACLES
+A possible approach is to employ model free Qlearning [85] by featurizing the history ψt and collecting on-policy data. However, given the size of Ψ, this may require a large number of samples. Another strategy is to parameterize the policy class and employ policy improvement [92] techniques. However, such techniques when applied to POMDP settings may lead to poor local minima due to poor initialization. We discussed in Section II-D how imitation learning offers a more effective strategy than reinforcement learning in scenarios where there exist good policies for the original problem, however these policies cannot be executed online (e.g due to computational complexity) hence requiring imitation via an offline training phase. In this section, we extend this principle and show how imitation of clairvoyant oracles enables efficient learning of POMDP policies.
+
+
+A. Imitation Learning
+We now formally define imitation learning as applied to our setting. Given a policy π, we define the distribution of histories P (ψ|π) induced by it (termed as roll-in). Let L (ψ, π) be a loss function that captures how well policy π imitates an oracle. Our goal is to find a policy πˆ which minimizes the expected loss as follows.
+πˆ = arg min
+π∈Π
+Eψ∼P (ψ|π) [L (ψ, π)] (9)
+This is a non-i.i.d supervised learning problem. Ross et al. [101] propose FORWARDTRAINING to train a non-stationary policy (one policy πˆt for each timestep), where each policy πˆt can be trained on distributions induced by previous policies (πˆ1, . . . , πˆt−1). While this solves the problem exactly, it is impractical given a different policy is needed for each timestep. For training a single policy, Ross et al. [101] show how such problems can be reduced to no-regret online learning using dataset aggregation (DAGGER). The loss function they consider L is a mis-classification loss with respect to what the expert demonstrated. Ross and Bagnell [99] extend the approach to the reinforcement learning setting where L is the reward-to-go of an oracle reference policy by aggregating values to imitate (AGGREVATE).
+B. Solving POMDP via Imitation of a Clairvoyant Oracle
+To examine the applicability of imitation learning in the POMDP framework, we compare the loss function (9) to the action value function (5). We see that a good candidate loss function L (ψ, π) should incentivize maximization of
+Q ̃πT −t+1(ψ, π(ψ)). A suitable approximation of the optimal
+value function Q ̃π∗
+T −t+1 that can be computed at train time would suffice. However, we cannot resort to oracles that explicitly reasoning about the belief over states P (st|ψt), let alone planning in this belief space due to tractability issues. In this work, we leverage the fact that for our problem domains, we have access to the true state st at train time. This allows us to define oracles that are clairvoyant - that can observe the state at training time and plan actions using this information.
+Definition 1 (Clairvoyant Oracle). A clairvoyant oracle πOR(s) is a policy that maps state s to action a with an aim to maximize the cumulative reward of the underlying MDP (S, A, Ω, R, T ).
+The oracle policy defines an equivalent action value function defined on the state as follows
+QtπOR (s, a) = R (s, a) + Es′∼P (s′|s,a)
+[V πOR
+t−1 (s′)] (10)
+Our approach is to imitate the oracle during training. This implies that we train a policy πˆ by solving the following optimization problem
+πˆ = arg max
+π∈Π
+E t∼U (1:T ),
+st,ψt∼P (s,ψ|π,t)
+[QπTO−Rt+1(st, π(ψt))] (11)
+While we will define training procedures to concretely realize (11) later in Section V, we offer some intuition behind this approach. Since the oracle πOR knows the state s, it has appropriate information to assign a value to an action a. The policy πˆ attempts to imitate this action from the partial information content present in its history ψ. Due to this realization error, the policy πˆ visits a different state, updates the history, and queries the oracle for the best action. Hence while the learnt policy can make mistakes in the beginning of an episode, with time it gets better at imitating the oracle.
+C. Analysis using a Hallucinating Oracle
+The learnt policy imitates a clairvoyant oracle that has access to more information (state s compared to history ψ). This results in a large realizability error which is due to two terms - firstly the information mismatch between s and ψ, and secondly the expressiveness of feature space. This realizability error can be hard to bound making it difficult to apply the performance guarantee analysis of [99]. It is also not desirable to obtain a performance bound with respect to the clairvoyant oracle J (πOR).
+To alleviate the information mismatch, we take an alternate approach to analyzing the learner by introducing a purely hypothetical construct - a hallucinating oracle.
+Definition 2 (Hallucinating Oracle). A hallucinating oracle π ̃OR computes the instantaneous posterior distribution over state P (s|ψ) and returns the expected clairvoyant oracle action value.
+Q ̃πT ̃O−Rt+1(ψ, a) = Es∼P (s|ψ)
+[QπTO−Rt+1(s, a)] (12)
+We show that by imitating a clairvoyant oracle, the learner effectively imitates the corresponding hallucinating oracle
+Lemma 1. The offline imitation of clairvoyant oracle (11) is equivalent to online imitation of a hallucinating oracle as shown
+πˆ = arg max
+π∈Π
+E t∼U (1:T ), ψt∼P (ψ|π,t)
+[Q ̃πT ̃O−Rt+1(ψt, π(ψt))
+]
+Proof: Refer to Appendix A. Note that a hallucinating oracle uses the same information content as the learnt policy. Hence the realization error is purely due to the expressiveness of the feature space. The empirical risk of imitating the hallucinating oracle will be significantly lower than the risk of imitating the clairvoyant oracle. Lemma 1 now allows us to express the performance of the learner with respect to a hallucinating oracle. This brings us to the key question - how good is a hallucinating oracle? Upon examining (12) we see that this oracle is equivalent to the well known QMDP policy first proposed by [81]. The QMDP policy ignores observations and finds the QMDP(s, a) values of the underlying MDP. It then estimates the action value by taking an expectation on the current belief over states P (s|ψ). This estimate amounts to assuming that any uncertainty in
+
+
+the agent’s current belief state will be gone after the next action. Thus, the action where long-term reward from all states (weighed by the probability) is largest will be the one chosen. [81] points out that policies based on this approach are remarkably effective. This has been verified by other works such as Koval et al. [63] and Javdani et al. [54]. This naturally leads to the question of why we cannot directly apply QMDP to our problem. The QMDP approach requires explicitly sampling from the posterior over states online - a step that we cannot tractably compute as discussed in Section III-D. However, by imitating clairvoyant oracles, we implicitly obtain such a behaviour. Imitation of clairvoyant oracles has been shown to be effective in other domains such as receding horizon control via imitating MPC methods that have full information [57]. [111] show how the partially observable acrobot can be solved by imitation of oracles having full state. [59] introduce imitation of QMDP in a deep learning architecture to train POMDP policies end to end. The connection with a hallucinating oracle also provides valuable insight into potential failure situations. [81] point out that policies based on this approach will not take actions to gain information. We discuss such situations in Section VIII-A.
+V. APPROACH
+A. Algorithms
+We introduced imitation learning and its applicability to POMDPs in Section IV. We now present a set of algorithms to concretely realize the process. The overall idea is as follows we are training a policy πˆ(ψ) that maps features extracted from the history ψ to an action a. The training objective is to imitate a clairvoyant oracle that has access to the corresponding full state s. In order to define concrete algorithms, we need to reason about two classes of policies - non-stationary and stationary. 1) Non-stationary policy: For the non-stationary case, we have a policy for each timestep πˆ1, . . . , πˆT . The motivation for adopting such a policy class is that the problems arising from the non i.i.d distribution immediately disappears. Such a policy class can be trained using the FORWARDTRAINING algorithm [101] which sequentially trains each policy on the distribution of features induced from the previous set of policies. Hence the training problem for each policy at timestep t is reduced to supervised learning. Alg. 2 describes the FORWARDTRAINING procedure to train the non-stationary policy. The policies are trained in a sequential manner. At each time-step t, the previously trained policies πˆ1, . . . , πˆt−1 are used to create a dataset of ψt by rolling-in (Lines 1–5). For each such datapoint ψt, there is a corresponding state st. A random action at is sampled and the
+oracle is queried for the cost-to-go QπTO−Rt+1(st, at) (Line 7).
+This is then added to the dataset Dt which is used to train the
+policy πˆt. This is illustrated in Fig. 4. We can state the following property about the training process
+Algorithm 2 FORWARDTRAINING (Non-stationary policy) 1: for t = 1 to T do
+2: Initialize Dt ← ∅. 3: for j = 1 to m do
+4: Sample initial state s1 from dataset P (s)
+5: Execute policy πˆ1, . . . , πˆt−1 to reach (st, ψt). 6: Execute any action at ∈ A.
+7: Collect value to go QjπOR = QπTO−Rt+1(st, at)
+8: Dt ← Dt ∪ {ψt, at, QjπOR }
+9: Train cost-sensitive classifier πˆt on Dt 10: Return Set of policies for each time step πˆ1, . . . , πˆT .
+Theorem 1. FORWARDTRAINING has the following guarantee
+J (πˆ) ≥ J (π ̃OR) − 2T √A εclass + T εor
+where εclass is the regression error of the learner and εor is the local oracle suboptimality.
+Proof: Refer to Appendix B. However, there are several drawbacks to using a nonstationary policy. Firstly, it is impractical to have a different policy for each time-step as it scales with T . While this might be a reasonable approach when T is small (e.g. sequence classification problems [23]), in our applications T can be fairly large. Secondly, and more importantly, each policy operates on data for only that time-step, thus preventing generalizations across timesteps. Each policy sees only D
+T fraction of the training data. This leads to a high empirical risk. 2) Stationary policy: A single stationary policy πˆ enjoys the benefit of learning on data across all timesteps. However, the non i.i.d data distribution implies the procedure of data collection and training cannot be decoupled - the learner must be involved in the data collection process. Ross and Bagnell [99] show that such policies can be trained by reducing the propblem to a no-regret online learning setting. They present an algorithm, AGGREVATE that trains the policy in an interactive fashion where data is collected by a mixture policy of the learner and the oracle, the data is then aggregated and the learner is trained on this aggregated data. This process is repeated. Alg. 3 describes the AGGREVATE procedure to train the stationary policy. To overcome the non i.i.d distribution issue, the algorithm interleaves data-collection with learning and iteratively trains a set of policies (πˆ1, πˆ2, . . . , πˆN ). Note that these iterations are not to be confused with time steps - they are simply learning iterations. A policy πˆi is valid for all timesteps. At iteration i, data is collected by rolling-in with a mixture of the learner and the oracle policy (Lines 1–9). The mixing fraction is chosen to be βi = (1 − α)i−1. Mixing implies flipping a coin with bias βi and executing the oracle if heads comes up. A random action at is sampled and the
+oracle is queried for the cost-to-go QπTO−Rt+1(st, at) (Line 11). The key step is to ensure that data is aggregated. The motivation for doing so arises from the fact that we want the
+
+
+s1 a1
+s2 a2
+st at
+P (s)
+P( )
+1
+at 2 A
+t
+2
+Clairvoyant Oracle
+Non-stationary Policy
+⇡OR
+Train ⇡ˆt on Dt
+Q⇡OR
+j = Q⇡OR
+T t+1(st, at)
+Get value to imitate
+Append to Dt { t, at, Q⇡OR
+j}
+FORWARDTRAINING
+s1 a1
+s2 a2
+st at
+P (s)
+P( )
+1 at 2 A
+t
+Clairvoyant Oracle
+Stationary Policy
+⇡OR
+Q⇡OR
+j = Q⇡OR
+T t+1(st, at)
+Get value to imitate
+AGGREVATE
+⇡mix,i Append to D
+{ t, at, t, Q⇡OR
+j}
+⇡mix,i+1
+⇡mix,N
+(a) (b)
+⇡ˆ1( t)
+⇡ˆ2( t) Train ⇡ˆi on D
+Train ⇡ˆi+1
+Train ⇡ˆN
+Fig. 4. Overview of the two approaches for training policies. (a) FORWARDTRAINING is used to train a non-stationary policy, i.e a sequence of policies πˆ1, . . . , πˆT at each time-step. To train a policy at time-step t, a state s is sampled from initial distribution P (s). The policies πˆ1, . . . , πˆt−1 are then used
+to roll-in to get (st, ψt). The oracle is queried to get QπOR
+T −t+1(st, at) which is then used to update the dataset and train policy πˆt. (b) AGGREVATE is used
+to train a stationary policy. The training process is iterative where dataset collection is interleaved with learning. At iteration i, a mixture policy πmix,i is
+used to roll-in to get (st, ψt). The oracle is queried to get QπOR
+T −t+1(st, at). The data is then aggregated to the whole dataset which is used to update the
+entire policy πˆi.
+Algorithm 3 AGGREVATE (Stationary policy)
+1: Initialize D ← ∅, πˆ1 to any policy in Π 2: for i = 1 to N do
+3: Initialize sub-dataset Di ← ∅ 4: Let roll-in policy be πmix,i = βiπOR + (1 − βi)πˆi−1 5: Collect m data points as follows: 6: for j = 1 to m do
+7: Sample initial state s1 from dataset P (s) 8: Sample uniformly t ∈ {1, 2, . . . , T } 9: Execute πmix,i up to time t − 1 to reach (st, ψt) 10: Execute any action at ∈ A
+11: Collect value-to-go QjπOR = QπTO−Rt+1(st, at)
+12: Di ← Di ∪ {ψt, at, t, QjπOR }
+13: Aggregate datasets: D ← D ⋃ Di 14: Train cost-sensitive classifier πˆi+1 on D
+15: Return best πˆi on validation
+learner to do well on the distribution it induces. [99] show that this can be posed as the mixture of learners (πˆ1, πˆ2, . . . , πˆN ) doing well on the induced loss sequences li(π) at every iteration. If we were to treat each iteration as a game in an online adversarial learning setting, this would be equivalent to having bounded regret with respect to the best policy in hindsight on the loss sequence (l1, l2, . . . , lN ). The strategy of dataset aggregation is an instance of follow the leader and hence has bounded regret. Hence, data is appended to the
+original dataset and used to train an updated learner πˆi+1 (Lines 13–14). AGGREVATE can be shown to have the following guarantee
+Theorem 2. N iterations of AGGREVATE, collecting m regression examples per iteration guarantees that with probability at least 1 − δ
+J (πˆ) ≥J (π ̃OR)
+− 2T
+√
+|A|
+(
+εclass + εreg + O
+(√log 1/δ/N m
+))
+−O
+( R T log T N
+)
++ T εor
+where εclass is the empirical regression regret of the best regressor in the regression class on the aggregated dataset, εreg is the empirical online learning average regret on the sequence of training examples, R is the range of oracle action value and εor is the local oracle suboptimality.
+Proof: Refer to Appendix C.
+B. Application to Informative Path Planning
+We now consider the applicability of Alg. 2 and Alg. 3 for learning a policy to plan informative paths. We refer to the mapping of the IPP problem to a POMDP defined in Section III-B. We first need to define a clairvoyant oracle in this context. Recall that the state st = {v1, . . . , vt, φ} is the set of nodes visited and the underlying world. A clairvoyant oracle
+
+
+start
+robot
+from database P ( )
+Rollin with policy ⇡mix to get state st, belief t
+Query oracle ⇡OR with at to get Q⇡OR (st, , at)
+Update learner ⇡ˆ to map (st, t, at) to Q⇡OR
+Sample world
+at at
+start
+robot
+from database P ( )
+Rollin with policy ⇡mix to get state st, belief t
+Query oracle ⇡OR with at to get Q⇡OR (st, , at)
+Update learner ⇡ˆ to map (st, t, at) to Q⇡OR
+Sample world
+at at
+Q⇡OR ( )
+at
+ft
+Sample a world
+from database P ( )
+Roll-in with policy ⇡mix
+to get history t
+Execute a random action at and featurize ( t, at) as ft
+Roll out with oracle ⇡OR add {ft, Q⇡OR } to data
+Fig. 5. An overview of QVALAGG in IPP where a learner πˆ is trained to imitate a clairvoyant oracle πOR. There are 4 key steps. Step 1: A world map φ is sampled from database representing P (φ). Step 2: A mixture policy πmix, of the learner and oracle is used to roll-in on φ to a timestep t to get history ψt. Step 3: A random action at is chosen and (ψt, at) is featurized as ft. Step 4: A clairvoyant oracle πOR is given full access to world map φ to compute
+the cumulative reward to go QπOR . The pair (ft, QπOR ) is added to data to update the learner. This process is repeated to train a sequence of learners.
+takes a state action pair (st, at) as input and computes a value. Depending on whether we are solving Problem HIDDEN-UNC or HIDDEN-CON, we explore two different kinds of oracles:
+1) Clairvoyant One-step-reward 2) Clairvoyant Reward-to-go
+1) Solving HIDDEN-UNC by Imitating Clairvoyant Onestep-reward: We first define a Clairvoyant One-step-reward oracle in the IPP framework.
+Definition 3 (Clairvoyant One-step-reward). A Clairvoyant One-step-reward returns an action value QtπOR (s, a) = R (s, a) that considers only the one-step-reward. In the context of HIDDEN-UNC, it uses the world map φ, the curent path {v1, . . . , vt}, the next node to visit vt+1 = at to compute
+the value QOR(φ, {v1, . . . , vt}, vt+1) as the marginal gain in utility, i.e.
+∆F (vt+1 | {v1, . . . , vt}, φ)
+To motive the use of Clairvoyant One-step-reward, we refer to the discussion on the structure of the Problem HIDDENUNC in Section II-A3. We assume that the utility function is adaptive monotone submodular - it has the property of montonicity and diminishing returns under the belief over world maps. This property implies the following
+1) Adaptive Monotonicity: The expected value of the utility can only increase on adding a node, i.e.
+Eφ∼P (φ|ψ) [∆F (v | Vψ, φ)] ≥ 0
+for all v ∈ V, where ψ = {vi}p
+i=1, {yi}p
+i=1, and Vψ =
+{vi}p
+i=1.
+2) Adaptive Submodularity: The expected gain in adding a node diminshes as more nodes are visited, i.e.
+Eφ∼P (φ|ψ) [∆F (v | Vψ, φ)] ≥
+Eφ∼P (φ|ψ′) [∆F (v | Vψ′ , φ)]
+for all v ∈ V, where ψ ⊆ ψ′ (history ψ is contained in history ψ′)
+For such functions, [36] show that greedily selecting vertices to visit is near-optimal. We use this property to show that the Clairvoyant One-step-reward induces a one-step-oracle which is equivalent to the greedy policy and hence near optimal. This implies the following Lemma
+Theorem 3. N iterations of AGGREVATE with Clairvoyant one-step-reward collecting m regression examples per iteration guarantees that with probability at least 1 − δ
+J (πˆ) ≥
+(
+1− 1
+e
+)
+J (π∗)
+− 2T
+√
+|A|
+(
+εclass + εreg + O
+(√log 1/δ/N m
+))
+−O
+( R T log T N
+)
+where εclass is the empirical regression regret of the best regressor in the regression class on the aggregated dataset, εreg is the empirical online learning average regret on the sequence of training examples, R is the maximum range of one-step-reward.
+Proof: Refer to Appendix D. We will shown in Section VI that such policies are remarkably effective. An added benefit of imitating the Clairvoyant One-step-reward is that the empirical classification loss εclass is lower since only the expected one-step-reward of an action needs to be learnt.
+2) Solving HIDDEN-CON by Imitating Clairvoyant Rewardto-go: Unforutunately, Problem HIDDEN-CON does not posses the adaptive-submodular property of HIDDEN-UNC due to the introduction of the travel cost. Hence imitating the one-step-reward is no longer appropriate. We define the Clairvoyant Reward-to-go oracle for this problem class
+Definition 4 (Clairvoyant Reward-to-go). A Clairvoyant Reward-to-go returns an action value QtπOR (s, a) that corresponds to the cumulative reward obtained by executing
+
+
+a and then following the oracle policy πOR. In the context of HIDDEN-CON, it uses the world map φ, the curent path {v1, . . . , vt}, the next node to visit vt+1 = at to solve the problem KNOWN-CON and compute a future sequence of nodes {vt+2, . . . , vT }. This provides the value
+QOR(φ, {v1, . . . , vt}, vt+1) as the marginal gain
+∆F ({vt+1, . . . , vT } | {v1, . . . , vt}, φ)
+The correspoding oracle policy πOR is obtained by following the computed path.
+Note that solving KNOWN-CON is NP-Hard and even the best approximation algorithms require some computation time. Hence the calls to the oracle must be minimized.
+3) Training and Testing Procedure: We now present concrete algorithms to realize the training procedure. Given the two axes of variation - problem and policy type - we have four possible algorithms
+1) REWARDFT: Imitate one-step-reward using nonstationary policy by FORWARDTRAINING (Alg. 2) 2) QVALFT: Imitate reward-to-go using non-stationary policy by FORWARDTRAINING (Alg. 2) 3) REWARDAGG: Imitate one-step-reward using stationary policy by AGGREVATE (Alg. 3) 4) QVALAGG: Imitate reward-to-go using stationary policy by AGGREVATE (Alg. 3)
+Table. I shows the algorithm mapping.
+TABLE I MAPPING FROM PROBLEM AND POLICY TYPE TO ALGORITHM
+Policy
+Problem HIDDEN-UNC HIDDEN-CON
+Non-stationary policy REWARDFT QVALFT Stationary policy REWARDAGG QVALAGG
+For completeness, we concretely define the training procedure for QVALAGG in Alg. 4. The procedure for the remaining three algorithms can be inferred from this. The algorithm iteratively trains a sequence of policies (πˆ1, πˆ2, . . . , πˆN ). At every iteration i, the algorithm conducts m episodes. In every episode a different world map φ and start vertex (vs) is sampled from a database. The roll-in is conducted with a mixture policy πmix,i which blends the learner’s current policy, πˆi−1 and the oracle’s policy, πOR using blending parameter βi. The blending is done in an episodic fashion, with probability βi the Clairvoyant Reward-to-go oracle is invoked to compute a path which is followed. With probability 1 − βi, the learner is invoked for the whole episode. In a given episode, the rollin is conducted to a timestep t which is uniformly sampled. At the end of the roll-in, we have a path {v1, . . . , vt} and a history ψt. A random action at ∈ A is sampled which defines the next vertex to visit vt+1 = at. The Clairvoyant Reward-to-go oracle is invoked with the world φ and the path already travelled {v1, . . . , vt}, vt+1}. It then invokes a solver to HIDDEN-CON to complete the path and return the reward to go QjπOR . This history action pair (ψt, at) is projected to
+Algorithm 4 QVALAGG
+1: Initialize D ← ∅, πˆ1 to any policy in Π 2: for i = 1 to N do
+3: Initialize sub-dataset Di ← ∅ 4: Let roll-in policy be πmix,i = βiπOR + (1 − βi)πˆi 5: Collect m data points as follows: 6: for j = 1 to m do
+7: Sample world φ from dataset P (s) 8: Sample start node vs for P (vs) 9: Sample uniformly t ∈ {1, 2, . . . , T } 10: Execute πmix,i up to time t − 1 to get path {v1, . . . , vt} and history ψt 11: Sample a random action at ∈ A as the next vertex to visit vt+1 = at 12: Invoke Clairvoyant Reward-to-go oracle
+to get QjπOR = QOR{φ, {v1, . . . , vt}, vt+1}.
+13: Di ← Di ∪ {ψt, at, t, QjπOR }
+14: Aggregate datasets: D ← D ⋃ Di 15: Train cost-sensitive classifier πˆi+1 on D
+16: Return best πˆi on validation
+a feature space along with label QjπOR . The data is aggregated
+to the dataset which is eventually used to train policy πˆi+1. Fig. 5 illustrates this approach.
+C. Application to Search Based Planning
+We now consider the applicability of Alg. 3 for heuristic learning in search based planning. Unlike the IPP problem domain, there is no incentive to use a non-stationary policy or imitate Clairvoyant One-step-rewards. Hence we only consider training a stationary policy imitating Clairvoyant Reward-togo. We first need to define a clairvoyant oracle for this problem. Given access to the world map φ, the oracle has to solve for the optimal number of expansions to reach the goal. This allows us to define a clairvoyant oracle planner that employs a backward Dijkstra’s algorithm, which given a world φ and a goal vertex vg plans for the optimal path from every v ∈ V using dynamic programming.
+Definition 5 (Clairvoyant Oracle Planner). Given full access to the state s, which contains the open list O and world φ, and a goal vg, the oracle planner encodes the cost-to-go from
+any vertex v ∈ V as the function QtπOR (s, a) which implicitly
+defines an oracle policy, πOR(s) = arg min
+v∈O
+QtπOR (s, a).
+The clairvoyant oracle planner provides a look-up table QOR (φ, v) for the optimal cost-to-go from any vertex irrespective of the current state of the search. A key distinction between this oracle and the one defined for an IPP problem in Section V-B is that we are able to efficiently get the cost-to-go value for all states by dynamic programming - we do not need to repeatedly invoke the oracle. We exploit this fact by extracting multiple labels from an episode even though the oracle is invoked only once. Additionally, this
+
+
+add {ft, Q⇡OR } to data
+Sample a world from database P ( )
+Roll-in with policy ⇡mix
+to get history t
+Execute a random action at and featurize ( t, at) as ft
+Roll out with oracle ⇡OR
+at
+Fig. 6. An overview of SAIL in search based planning where a learner πˆ is trained to imitate a clairvoyant oracle πOR. There are 4 key steps. Step 1: A world map φ is sampled from database representing P (φ) along with start goal pair (vs, vg). Step 2: A mixture policy πmix, of the learner and oracle is used to roll-in on φ to a timestep t to get history ψt which is the combination of open list, closed list and invalid edges. Step 3: A random vertex at from the open list is chosen and (ψt, at) is featurized as ft. Step 4: A clairvoyant oracle πOR is given full access to world map φ to compute the cumulative
+cost to go QπOR . The pair (ft, QπOR ) is added to data to update the learner. This process is repeated to train a sequence of learners.
+allows us a better roll-in procedure where the oracle and learner are interleaved. We adapt the AGGREVATE framework to present an algorithm, Search as Imitation Learning (SAIL).
+Algorithm 5 SAIL (P (φ), P (vs, vg), k)
+1: Initialize D ← ∅, πˆ1 to any policy in Π 2: for i = 1 to N do
+3: Initialize sub dataset Di ← ∅ 4: Collect mk data points as follows: 5: for j = 1 to m do
+6: Sample world map φ ∼ P (φ) 7: Sample (vs, vg) ∼ P (vs, vg) 8: Invoke clairvoyant oracle planner to compute QπOR (φ, v) ∀ v ∈ V 9: Sample uniformly k timesteps {t1, t2, . . . , tk} where each ti ∈ {1, . . . , T } 10: Rollout search with
+πmix,i = βiπOR + (1 − βi)πˆi
+11: At each t ∈ {t1, t2, . . . , tk} pick a random action at to get corresponding (ψt, v) 12: Query oracle for QOR (φ, at)
+13: Di ← Di ∪ {ψt, at, t, QOR (φ, at)}
+14: Aggregate datasets: D ← D ⋃ Di 15: Train cost-sensitive classifier πˆi+1 on D
+16: Return best πˆi on validation
+Alg. 5, describes the SAIL framework which iteratively trains a sequence of policies (πˆ1, πˆ2, . . . , πˆN ). For training the learner, we collect a dataset D as follows - At every iteration i, the agent executed m different searches (Alg. 1). For every search, a different world φ and the pair (vs, vg) is sampled from a database. The agent then rolls-out a search with a mixture policy πmix,i which blends the learner’s current policy, πˆi and the oracle’s policy, πOR using blending parameter βi. During the search execution, at every timestep in a set of k uniformly sampled timesteps, we select a random
+action from the set of feasible actions and collect a datapoint {ψt, at, t, QOR (φ, at)}. The policy πmix,i is rolled out till the end of the episode and all the collected data is aggregated with dataset D. At the end of N iterations, the algorithm returns the best performing policy on a set of held-out validation environment or alternatively, a mixture of (πˆ1, πˆ2, . . . , πˆN ). Fig. 6 illustrates the SAIL framework. Note that while the oracle is invoked once per φ, we obtain k datapoints - this is critical for speeding up training. We also note that even though the time complexity of Select is O (|Ot|) at timestep t, SAIL can have better overall complexity if it can achieve a squared reduction in number of expansions compared to uninformed search as discussed more in Appendix G.
+VI. EXPERIMENTS ON INFORMATIVE PATH PLANNING
+In this section, we extensively evaluate our approach on a set of 2D and 3D informative path planning problems across a spectrum of synthetic and real world environments. We examine a class of informative path planning problem where a robot, equipped with a range limited sensor, possibly constrained by time and fuel resources, is tasked with 3D reconstruction of structures in the world. We choose a variety of environments to highlight the importance of adaptive behaviours for information gathering. Our implementation is open sourced for both MATLAB and C++ (https://bitbucket. org/sanjiban/matlab learning info gain).
+A. Problem Details
+We consider both 2D and 3D informative path planning problems. The world map φ is represented as a 2D or 3D binary grid, i.e. a grid cell is either occupied or free. The candidate set of sensing locations V is generated by uniformly randomly sampling nodes in the configuration space of the robot. For 2D problems, the configuration space of the robot is SE(2), for 3D it is SE(3). We assume for simplicity that the robot can teleport between any two nodes vi and vj and
+
+
+the cost of travel is the 2D/3D euclidean straight-line distance T ({vi, vj}, φ) = ||vi − vj||2. It would be straightforward to incorporate practical constraints such as collision avoidance by only allowing motion between vertices that are known to collision free and computing travel cost to be the arc length distance of a collision free path. We assume that the robot is equipped with a field-of-vision (FOV) and range limited sensor. When a robot visits a node v in a world map φ, the measurement received by the robot, y = H (v, φ), is computed by ray-casting the sensor on the world and obtaining a scan line (2D) or a depth-image (3D). The utility function F is selected to be the fractional coverage function (similar to [50]) which is defined as follows. Let the robot traverse a path ξ = (v1, v2, . . . , vp) in a world φ. For each node vi ∈ ξ we have a corresponding measurement yi. Let the coverage map Ci be a binary grid whose cells are 1 iff the corresponding cell in φ is occupied and yi contains a point in that cell. The total coverage map of a path ξ is a union
+of all coverage maps C =
+p
+⋃
+i=1
+Ci. Then the utility function is
+the ratio of the total coverage and the total occcupied cells in
+the world map, i.e. F (ξ, φ) = ||C||1
+||φ||1 .
+While we assume the objective of the robot is to ‘uncover’ every cell of the hidden world map, this framework can also allow a more task specific objective. For example, if the objective is to perform surface reconstruction of a specific object (and not of every surface in the world map), the utility function can be modified to only cover gridcells belonging to that object. The quality of an observation can also be included in the utility, i.e. measurements at close range can be weighted more than measurements taken from far away. The values of total time step T and travel budget B vary with problem instances and are specified along with the results. The history of events ψt is represented as an occupancy grid X where each grid cell x ∈ X corresponds to an occupancy value Po (x) ∈ [0, 1]. Every time a new measurement is received, X is updated by ray-casting and applying Bayes’ rule [116]. The policy π(ψt) takes as input the occupancy grid and selects an action at+1 that corresponds to the next node v to be visited.
+B. Baseline: Information Theoretic Heuristics
+Isler et al. [50] propose a set of information theoretic heuristics that quantify the information gain of obtaining a measurement for the task of volumetric reconstruction which include visibility likelihood and the likelihood of seeing new parts of the object. These heuristics are variants of Shannon’s entropy where cells are weighted by an importance function. All of the heuristics are myopic, i.e. given the current occupancy grid, each candidate node is evaluated and the best node is selected as the next action. We briefly describe these heuristics and ask the reader to refer to Isler et al. [50] for further details. To evaluate a node v, a set of rays R(v) are cast from the node using the specifications of the sensor model. A ray r ∈ R corresponds to a set of grid cells in the occupancy
+grid X (r). Given a grid cell x, the probability of it being
+occupied is Po (x) and being free is P ̄o (x). This can be used to compute various information gain metrics according to different heuristics. Let I (x) be the information stored in the grid cell x. Then the information gain for a node is given by
+IG (v) = ∑
+∀r∈R(v)
+∑
+∀x∈X (r)
+I (x) (13)
+Depending on the type of information gain I, there can be several information gain functions
+1) Average Entropy: IGo (v) This corresponds to the entropy
+Io (x) = −Po (x) log Po (x) − P ̄o (x) log P ̄o (x) (14)
+2) Occlusion Aware Entropy: IGv (v) This corresponds to considering the visibility likelihood of a grid cell
+Iv (x) = Pv(x)Io (x) (15)
+where Pv(x) is the likelihood of the ray r leading to the x being free. 3) Unobserved Voxel: IGu (v) This corresponds to only considering unknown grid cells
+Iu (x) =
+{
+1 if x is unknown
+0 otherwise (16)
+4) Unobserved Entropy: IGk (v) This is the composition of unobserved voxel with occlusion aware entropy
+Ik (x) = Iu (x) Iv (x) (17)
+5) Rear Side Voxel: IGb (v) Let RS be the set of rear-side grid-cells defined as occluded, unknown gird cells adjacent on the ray to an occupied grid cell. Then
+Ib (x) =
+{
+1 if x ∈ RS
+0 otherwise (18)
+6) Rear Side Entropy: IGn (v) This is the composition of rear side voxel with occlusion aware entropy
+In (x) = Ib (x) Iv (x) (19)
+The heuristics are used in a greedy fashion as follows. Given the robot has already visited nodes v1, . . . , vt−1, it decides to visit node vt according to the following rule
+vt = arg max
+vt ∈V
+IG (vt)
+∑
+v∈V IG (v) − λ ||vt − vt−1||2
+∑
+v∈V ||v − vt−1||2
+(20)
+When applied to the Problem HIDDEN-UNC, we de-activate the penalization and set λ = 0.
+
+
+C. Imitation Learning Details
+1) Feature Extraction and Learner: The policy maps the history ψ to an action a by learning a function approximation
+for the action value function Qˆ(ψ, a). The tuple (a, ψ) is mapped to a vector of features f = [f ITG f Tmot
+]T . The first set of features f IG ∈ R6 are the information gain heuristics defined in Section VI-B. These heuristics are computed using the occupancy map corresponding to history ψ and the candidate node corresponding to action a. There are several reasons for using these heuristics as the feature vector. They allow generalization across different instance of the world map. They also allow for fare comparison against the heuristics as baseline approaches - the learner learns a trade-off between heuristics. f mot ∈ R7 encodes the distance already travelled by the
+robot (R1), the relative translation (R3) and rotation (R3) to visit the candidate node from the current node. These set of features capture the travel cost trade-off for visiting a node. We use random forest regression as a function approximator [76]. 2) Dataset Creation: The 2D world maps are created by randomly distributing geometric objects such as rectangles and circles according to hand design parametric distribution. The 3D world maps are created using the ROS-Gazebo simulator and randomly distributing 3D object meshes. Depending on the environment (such as construction site or office-desk), different collection of objects and parametric distributions are selected. For the experiment on a real dataset, we used registered RGBD data collected by [110]. The original dataset is a set of registered point cloud along with the measurement pose. This dataset can be used to create the world map φ. The set of poses are used to create a fully connected graph V. The algorithm is then restricted to choosing a subset of these poses to maximize the utility. Every time the algorithm visits a node vi, the corresponding measurement yi is returned. We found that this setup allowed us to easily evaluate information gathering algorithms on real data in a completely decoupled manner from the data collection process. This process of dataset creation motivates the applicability of our method in practical settings. Given a new environment, we can envision collecting a dataset open-loop, either via manual operation or via some base exploration policy. We can then learn an efficient policy on this dataset and subsequently used the learnt policy for future operations. The generalization capability of the learner allows performance to be transferred to environments with similar object configurations. 3) Clairvoyant Oracle: For algorithms REWARDAGG and REWARDFT, the clairvoyant oracle is simply the one-stepreward function, i.e. the marginal utility of visiting a node given the history of nodes visited. An important implementation detail is that when using the one-step-reward oracle, the call to the oracle is inexpensive. Hence, instead of sampling a random action and obtaining its value, all actions can be queried. This dramatically improves the convergence due to
+the increase in data size. For QVALAGG and QVALFT, the clairvoyant oracle needs to solve the submodular routing problem (Problem KNOWNCON). We use the Generalized Cost Benefit (GCB) [129] algorithm - an efficient greedy algorithm with bi-criterion approximation guarantees. The core idea of the algorithms is very simple: at iteration i select a node vi that maximizes the ratio of the marginal gain in utility and the marginal gain in travel cost
+vi = arg max
+v∈V
+F
+(vi ∪ {vj }i−1
+j=1, φ) − F ({vj }i−1
+j=1, φ) T
+(vi ∪ {vj }i−1
+j=1, φ) − T ({vj }i−1
+j=1, φ) (21)
+Once a vertex vi is selected, a TSP solver is invoked to find the minimum cost route through nodes v1, . . . , vi and the vertices are re-ordered accordingly. The process is repeated till the travel budget constraints are met. Note that computing the denominator exactly in (21) might be expensive since it involves a call to a TSP solver. We can instead approximate it by the distance to the node vi from the last node in the route
+vi−1.
+D. Analysis of Results
+Fig. 7 shows the utility of all algorithms on various synthetic datasets. The two numbers are lower and upper 95% confidence intervals of the episodic utility of each algorithm. The best performance on each dataset is highlighted. For Problem HIDDEN-UNC, REWARDAGG is employed along with baseline heuristics. For Problem HIDDEN-CON, QVALAGG is employed with baseline heuristic augmented with motion penalization. The train size is 100 and test size is 10. We present a set of observations to interpret these results.
+O 1. The learnt policy from REWARDAGG/ QVALAGG has a consistently competitive performance across all datasets.
+Fig. 7 shows the performance of all algorithms on a set of 2D and 3D datasets. We see that out of the 10 datasets, the learners perform better than any heuristic on 8. On 2 of the datasets, the Average Entropy heuristic outperforms the learner by a small margin. On examining the datasets, we see that the unknown space exploration behaviour of Average Entropy results in good performance in environments that either lack spatial correlation or contain objects distributed in the environment.
+O 2. The performance of heuristics vary widely across datasets, however, the performance of the learner is robust.
+We can see that the relative ranking of Average Entropy and Rear Side Voxel interchanges from Dataset 1 to 2. This motivates the need for adaptive policies that assign different utility to unknown cells conditioned on the environment in which the robot is operating. The learner’s policy on the other hand adapts to different environments and hence maintains a consistently good performance. Interestingly, it also outperforms the heuristic pointwise across datasets, which
+
+
+Dataset Sample World Maps Problem RewardAgg
+/ QvalAgg
+Average Entropy
+Occlusion Aware
+Unobserved Voxels
+Rear Side Voxels
+Rear Side Entropy
+Concentrated Parallel Lines (2D)
+HIDDEN-UNC HIDDEN-CON
+(0.42,0.45) (0.18, 0.27)
+(0.20, 0.22) (0.16, 0.20)
+(0.06, 0.09) (0.07, 0.09)
+(0.20, 0.25) (0.14, 0.18)
+(0.36, 0.41) (0.19, 0.24)
+(0.30, 0.34) (0.21, 0.26)
+Distributed Blocks (2D)
+HIDDEN-UNC HIDDEN-CON
+(0.37,0.41) (0.20, 0.26)
+(0.26, 0.30) (0.21, 0.26)
+(0.11, 0.16) (0.11, 0.16)
+(0.22, 0.29) (0.15, 0.20)
+(0.22, 0.29) (0.15, 0.18)
+(0.24, 0.28) (0.16, 0.19)
+Poisson Forest of Circular Discs (2D)
+HIDDEN-UNC HIDDEN-CON
+(0.58, 0.61) (0.54, 0.59)
+(0.59, 0.62) (0.54, 0.59)
+(0.49, 0.53) (0.42, 0.46)
+(0.39, 0.45) (0.34, 0.41)
+(0.53, 0.55) (0.37, 0.43)
+(0.42, 0.47) (0.39, 0.44)
+Tabular World of Rectilinear Blocks (2D)
+HIDDEN-UNC HIDDEN-CON
+(0.43, 0.53) (0.27, 0.33)
+(0.31, 0.35) (0.26, 0.29)
+(0.20, 0.26) (0.18, 0.23)
+(0.28, 0.35) (0.21, 0.28)
+(0.35, 0.44) (0.18, 0.24)
+(0.25, 0.31) (0.21, 0.27)
+Bookshelves and Tables (3D)
+HIDDEN-UNC HIDDEN-CON
+(0.14, 0.31) (0.05, 0.24)
+(0.01, 0.04) (0.01, 0.04)
+(0.01, 0.04) (0.01, 0.04)
+(0.01, 0.04) (0.01, 0.04)
+(0.01, 0.22) (0.01, 0.22)
+(0.01, 0.19) (0.01, 0.19)
+Cluttered Construction Site (3D)
+HIDDEN-UNC HIDDEN-CON
+(0.14, 0.20) (0.08, 0.12)
+(0.01, 0.12) (0.01, 0.12)
+(0.01, 0.09) (0.01, 0.09)
+(0.01, 0.09) (0.01, 0.09)
+(0.01, 0.11) (0.01, 0.11)
+(0.01, 0.10) (0.01, 0.10)
+Office Desk and Chairs (3D)
+HIDDEN-UNC HIDDEN-CON
+(0.69, 0.80) (0.55, 0.72)
+(0.46, 0.59) (0.46, 0.59)
+(0.51, 0.63) (0.48, 0.63)
+(0.51, 0.63) (0.48, 0.63)
+(0.59, 0.67) (0.43, 0.52)
+(0.61, 0.72) (0.41, 0.53)
+Fig. 7. Results for Problems HIDDEN-UNC and HIDDEN-CON on a spectrum of 2D and 3D exploration problems. The train size is 100 and test size is 10. Numbers are the confidence bounds (for 95% CI) of cumulative reward at the final time step. Algorithm with the highest median performance is emphasized in bold.
+is indicative of the fact that the adaptation happens during exploration as well.
+O 3. The performance margin of REWARDAGG in Problem HIDDEN-UNC as compared to heuristics is much larger than that of QVALAGG in Problem HIDDEN-CON
+This is seen to be especially true in Dataset 1, 2 and 4. As conjectured in Section V-B1, this can be attributed to two reasons. Firstly, the near-optimality guarantee in Theorem 3 of imitating a Clairvoyant one-step-reward bounds the performance of the learner. Secondly, the empirical regression regret of imitating one step reward values will be much lower than trying to estimate the action values using features from the history ψt, i.e. it is easier to predict the immediate utility of going to a sensing location than trying to predict the future utility.
+O 4. The performance of Average Entropy in the Poisson Forest dataset is at par with the learner.
+The Poisson Forest dataset is created by sampling circles in the environment from a spatial Poisson distribution where the density of the forest is specified. The lack of spatial correlation, implies it is equally likely to find objects anywhere in the world - an assumption that Average Entropy optimizes.
+E. Case study A: Adaptation to Different Environments
+We created a set of 2D exploration problems to gain a better understanding of the learnt policies and baseline heuristics.
+We did this both for Problem HIDDEN-UNC (Fig. 8) and HIDDEN-CON (Fig. 9). The dataset comprises of 2D binary world maps, uniformly distributed nodes and a simulated laser. The problem details are T = 30 and |A| = 300. The cost budget for HIDDEN-CON is B = 2500. The train size is 100, test size is 100. REWARDAGG and QVALAGG is executed for 10 iterations.
+1) Dataset 1: Parallel Lines: We first examined Problem HIDDEN-UNC. Fig. 8 (a) shows a dataset created by applying random affine transformations to a pair of parallel lines. This dataset is representative of information being concentrated in an area in the environment, e.g. powerline inspection. Fig. 8 (c) shows a comparison of REWARDAGG, REWARDFT with baseline heuristics. While Rear Side Voxel outperforms Average Entropy, REWARDAGG outperforms both. Fig. 8 (e) shows progress of each. Average Entropy explores the whole world without focusing, Rear Side Voxel exploits early while REWARDAGG trades off exploration and exploitation. The same trend can be observed in Problem HIDDENCON. Fig. 9 (c) shows a comparison of QVALAGG with baseline heuristics. The heuristic Rear Side Voxel performs the best, while QVALAGG is able to match the heuristic. Fig. 9 (e) shows progress of QVALAGG along with two relevant heuristics - Rear Side Voxel and Average Entropy. Rear Side Voxel takes small steps focusing on exploiting viewpoints along the already observed area. Average Entropy aggressively visits the unexplored area which is mainly free space. QVALAGG initially explores the world but on seeing
+
+
+RewardAgg
+Rear Side Voxel
+Average Entropy
+∑R: 0.127 ∑R: 0.222 ∑R: 0.444
+Time Step
+∑R: 0.018 ∑R: 0.176 ∑R: 0.367
+∑R: 0.053 ∑R: 0.116 ∑R: 0.181
+7 15 30
+(a) (b)
+(c) (d)
+(e) (f)
+RewardAgg
+Rear Side Voxel
+∑R: 0.113 ∑R: 0.226 ∑R: 0.379
+∑R: 0.098 ∑R: 0.183 ∑R: 0.248
+∑R: 0.062 ∑R: 0.144 ∑R: 0.274
+Time Step
+7 15 30
+Time Steps
+0 5 10 15 20 25 30
+Cumulative Reward
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4 RewardAgg RewardFT Average Entropy Rear Side Voxel
+Time Steps
+0 5 10 15 20 25 30
+Cumulative Reward
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4
+RewardAgg RewardFT Average Entropy Rear Side Voxel
+Average Entropy
+Fig. 8. Case study of Problem HIDDEN-UNC using REWARDAGG, REWARDFT and baseline heuristics. Two different datasets of 2D exploration are considered - (a) dataset 1 (parallel lines) and (b) dataset 2 (distributed blocks). Problem details are: T = 30, |A| = 300, 100 train and 100 test maps. A sample test instance is shown along with a plot of cumulative reward with time steps for different policies is shown in (c) and (d). The error bars show 95% confidence intervals. (e) and (f) show snapshots of the execution at time steps 7, 15 and 30.
+
+
+Time Steps
+0 5 10 15 20 25 30
+Cumulative Reward
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+ExpLOre Average Entropy Occlusion Aware Unobserved Voxel Rear Side Voxel
+Time Steps
+0 5 10 15 20 25 30
+Cumulative Reward
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+ExpLOre Average Entropy Occlusion Aware Unobserved Voxel Rear Side Voxel
+QvalAgg
+Average Entropy Rear Side Voxel
+Time Step
+7 15 30
+(a) (b)
+(c) (d)
+(e) (f)
+Time Step
+7 15 30
+QvalAgg QvalAgg
+∑R: 0.022 ∑R: 0.153 ∑R: 0.184
+∑R: 0.031 ∑R: 0.085 ∑R: 0.169
+∑R: 0.060 ∑R: 0.168 ∑R: 0.261 ∑R: 0.093 ∑R: 0.159 ∑R: 0.261
+∑R: 0.098 ∑R: 0.170 ∑R: 0.170
+∑R: 0.058 ∑R: 0.117 ∑R: 0.256
+Average Entropy Rear Side Voxel QvalAgg
+Fig. 9. Case study of Problem HIDDEN-UNC usingQVALAGG with baseline heuristics on a 2D exploration problem on 2 different datasets - dataset 1 (concentrated information) and dataset 2 (distributed information). The problem details are: T = 30, B = 2500, |A| = 300, 100 train and 100 test maps. A sample test instance is shown along with a plot of cumulative reward with time steps for different policies is shown in (c) and (d) The error bars show 95% confidence intervals Snapshots of execution of QVALAGG, Rear Side Voxel and Average Entropy are shown for (e) dataset 1 and (f) dataset 2. The snapshots show the evidence grid at time steps 7, 15 and 30.
+
+
+(a) (b) (c)
+(d) (e) (f)
+Time Steps
+02468
+Cumulative Reward
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4 ExpLOre Average Entropy Occlusion Aware Rear Side Voxel Rear Side Entropy Proximity Count
+Fig. 10. Comparison of QVALAGG with baseline heuristics on a 3D exploration problem where training is done on simulated world maps and testing is done on a real dataset of an office workspace. The problem details are: T = 10, B = 12, |A| = 50. (a) Samples from 100 simulated worlds resembling an office workspace created in Gazebo. (b) Real dataset collected by [110] using a RGBD camera. (c) Plot of cumulative reward with time steps for QVALAGG and baseline heuristics on the real dataset. (d) The 3D model of the real office workspace formed by cumulating measurements from all poses. (e) Snapshots of execution of Occlusion Aware heuristic at time steps 1, 3, 5, 9. (f) Snapshots of execution of QVALAGG heuristic at time steps 1, 3, 5, 9.
+parts of the lines reverts to exploiting the area around it.
+2) Dataset 2: Distributed Blocks: We first examined Problem HIDDEN-UNC. Fig. 8 (b) shows a dataset created by randomly distributing rectangular blocks around the periphery of the map. This dataset is representative of information being distributed around. Fig. 8 (d) shows that Rear Side Voxel saturates early, Average Entropy eventually overtaking it while REWARDAGG outperforms all. Fig. 8 (f) shows that Rear Side Voxel gets stuck exploiting an island of information. Average Entropy takes broader sweeps of the area thus gaining more information about the world. QVALAGG shows a non-trivial behavior exploiting one island before moving to another. The same trend can be observed in Problem HIDDEN-CON. Fig. 9 (d) shows that the heuristic Average Entropy performs the best, while QVALAGG is able to match the heuristic. Rear Side Voxel saturates early on and performs worse. Fig. 9 (f) shows a similar trend as Fig. 8 (f).
+F. Case study B: Train on Synthetic, Test on Real
+To show the practical impact of our framework, we show a scenario where a policy is trained on synthetic data and tested on a real dataset. Fig. 10 (a) shows some sample worlds created in Gazebo to represent an office desk environment on which QVALAGG is trained. Fig. 10 (b) shows a dataset of an office desk collected by TUM Computer Vision Group [110]. The dataset is parsed to create a pair of pose and registered point cloud which can then be used to evaluate different algorithms. Fig. 10 (c) shows that QVALAGG outperforms all heuristics. Fig. 10 (f) shows how QVALAGG learns a desk
+exploring policy by circumnavigating around the desk. This shows the powerful generalization capabilities of the approach. In contrast, the best heuristic Occlusion Aware gets stuck in a local minima(Fig. 10 (e))
+G. Case study C: Policy Search vs Imitation Learning
+We compared our approach to a baseline approach of policy search. We picked the problem setting HIDDEN-UNC, the dataset ‘Concentrated Parallel Lines’ and the trained policy using REWARDAGG. We created a parametrized policy which was linear on the space of the information gain heuristics. The policy, parameterized by θ ∈ R6, assigns at time t to each vertex v, picks the action with the highest score as follows
+arg max
+vt ∈V
+θT IG (vt)
+We train such a policy using a black-box sample efficient policy search method, Covariance Matrix Adaptation Evolution Strategy (CMAES) [41]. CMAES is allowed 1000 rollouts, the same number of calls to oracle as REWARDAGG (Note that CMAES actually has access to more information as they are full rollouts compared to single reward calls in REWARDAGG). Fig. 11(a) shows comparison between the final policy trained by CMAES and the best policy on validation trained by REWARDAGG on a held out test dataset. We see that REWARDAGG outperforms CMAES not only on the cumulative reward by also at each time step. This confirms our hypothesis that model free policy improvement is slow to converge on account of sample inefficiency. It should be noted
+
+
+0 5 10 15 20 25 30
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4
+0.45
+0.5
+Time Steps
+Cumulative Reward
+(a) (b)
+RewardAgg CMAES
+2 4 6 8 10
+0.3
+0.32
+0.34
+0.36
+0.38
+0.4
+0.42
+Iterations of RewardAgg
+Cumulative Reward
+RewardAgg ForwardTraining
+Each policy in ForwardTraining and the single RewardAgg policy have same data size
+Fig. 11. (a) Comparison of REWARDAGG with CEM policy search. Both algorithms are given access to the same amount of data. The final policy from CEM and the best validation policy of REWARDAGG are then executed on a test dataset. REWARDAGG outperforms CEM not only overall but pointwise at each timestep. (b) Comparison of REWARDAGG with FORWARDTRAINING. Each policy in FORWARDTRAINING is trained with a dataset size of 500. REWARDAGG is trained with 100 samples per iteration for 10 iteration. The performance of both policies on test dataset is shown. REWARDAGG surpasses FORWARDTRAINING at the 4th iteration and never drops below. At iteration 5 the single policy of REWARDAGG has the same dataset size as each policy of the 10 policies of FORWARDTRAINING. However the single policy still outperforms the nonstationary policy.
+that the CMAES policy outperforms all the baseline heuristics as expected.
+H. Case study D: FORWARDTRAINING vs AGGREVATE
+We compared the training framework of FORWARDTRAINING, which trains a different policy for every time-step with AGGREVATE that trains a single policy across all time steps. We wished to examine the following question - ‘How much data does a the single AGGREVATE policy need to be competitive with FORWARDTRAINING?’. We picked the problem setting HIDDEN-UNC and the dataset ‘Concentrated Parallel Lines’. We trained FORWARDTRAINING where each policy πt is given 500 datapoints (hence for episode length T = 30, a total of 15, 000 datapoints are used). We trained REWARDAGG where each iteration has 100 datapoints, and the the number of iterations is 10. Hence the REWARDAGG policy matches the same datasize as FORWARDTRAINING at iteration 5. Fig. 11(b) shows a comparison between FORWARDTRAINING and REWARDAGG. We see that REWARDAGG outperforms FORWARDTRAINING by iteration 4, following which the performance converges and oscillates at values above FORWARDTRAINING. Interestingly, at iteration 5 REWARDAGG outperforms FORWARDTRAINING even though each policy in FORWARDTRAINING has access to the same dataset size as REWARDAGG. We conjecture that this might be because of the generalization effect across time-steps - FORWARDTRAINING might be over-fitting as it reasons about timesteps individually.
+VII. EXPERIMENTS ON SEARCH BASED PLANNING
+In this section, we extensively evaluate our approach on a set of search based planning problems for 2D planning on synthetic problems and more realistic 4D nonholonomic path planning problems encountered by UAVs flying at various speed regimes. We choose a wide variety of world distributions ranging from simple and intuitive environments, chosen to
+highlight the importance of exploiting environment structure in motion planning, to complex, heterogenous environments for analyzing scalability and robustness. We also present closed loop results on a UAV flying outdoors at high speeds. Additionally, we have developed a simple and intuitive Python based planning pipeline to serve as a backend for the Gym environment. The planning environment exposes search as a policy and makes it easy to incorporate standard machine learning libraries [115, 1] with custom planning graphs that requires only environment images as input. We use this planning pipeline to conduct all our experiments. Source code and instructions can be found via our project page at this link: https://goo.gl/YXkQAC
+A. Problem Details
+We first describe the 2D navigation task. Here, the world map φ is a 2D binary map. The graph G is a discrete lattice of size 200 × 200 where each node is connected to the 8 neighbours. The robot has to plan from bottom-left to top-right of the lattice. Note that while the grid size for these problems are small, the edge evaluation for such a graph could be arbitrarily expensive in practice. For example, consider the problem of planning 2D routes for aircrafts. It is plausible to envision that the lattice resolution is 100m and the 200 × 200 lattice covers an area of 20km. Evaluation of each edge of such a lattice requires collision checking with other dynamically moving aircrats, no-fly-zones and risk of flying over urban areas. This implies that a real time traffic control can only search a small fraction of the lattice. We now describe a more realistic 4D nonholonomic path planning problem on a state lattice for problems encountered by UAVs. The term nonholonomic path planning [70] refers to the fact that certain class of dynamical systems are constrained in the range of feasible motions the robot can execute [61]. It is a common practice to approximate UAVs moving at
+
+
+high speeds as curvature constrained systems with unicycle dynamics [33, 32, 18]. We consider the problem of path planning for such systems by planning on a state-lattice [95]. We consider two classes of UAVs : an autonomous helicopter moving at speeds of 30m/s and a quadrotor (DJI M100) flying at 5m/s.
+The autonomous helicopter has a minimum radius of 50m and plans on a state-lattice G of resolution 25m. The average degree of a node is 21. The distance between start and goal is 600m. The world φ is represented as a 3D binary grid map and a set of 3D no-fly-zones (represented as polygons with a height range). An edge evaluation requires that every state on an edge is at a clearance distnce from all obstacles. Expansion of each node takes 1ms on average. The robot is required to plan within a time budget of 500ms thus corresponding to maximum of 500 expansions. The quadrotor has a minimum radius of 12.5m and plans on a state-lattice G of resolution 12.5m. The average degree of a node is 9. The distance between start and goal is 300m. The world is represented as a 3D binary grid map and a set of 3D no-fly-zones. Expansion of each node takes 1ms on average. The robot is required to plan within a time budget of 1000ms thus corresponding to a maximum of 1000 expansions.
+B. Baseline Approaches For Search Based Planning
+1) Motion Planning Baselines: For 2D navigation, we compare against greedy best-first search with 2 commonly used heuristics - the euclidean distance (hEUC) and the manhattan distance (hMAN). We also use A* algorithm as a baseline with hEUC heuristic. Additionally, we compare against the MHA* algorithm [3] which has been proven to be an effective way of combining multiple, often unrelated, heuristics providing bounds on solution quality [94]. We use a simplified version which expands three different heuristics in a round-robin fashion - [hEUC, hMAN, dOBS], where dOBS is the euclidean distance to closest, known obstacle cell in I. For 4D nonholonomic planning problems, we use the Dubins distance [31] as a heuristic.
+2) Machine Learning Baselines: We consider two learning baselines (a) Supervised Learning (SL) with data from roll-outs with πOR and (b) Reinforcement Learning using evolutionary strategies (CEM) and Q-Learning (QL) with function approximation. These methods are explained in detail in Appendix E.
+C. Imitation Learning Details
+1) Feature Extraction and Learner: The policy maps the history ψ to an action a by learning a function approximation
+for the action value function Qˆ(ψ, a). The tuple (a, ψ) is mapped to a vector of features f . Here the history ψ is represented as a concatenation of all lists, i.e ψt = {O, C, I}. The action a is the vertex v to expand. We now describe the feature extraction for 2D navigation problems. Although technically, the features for a vertex v should depend on the parent edge e that leads to the vertex, we ignore this in practice and consider a vertex in isolation
+to calculate features. It is important to note that the features used must be easy to calculate (no high computational burden) and should only require information uncovered by search until that point in time(else it would count as extra expansions). We define the feature vector to be a concatenation of the two vectors i.e, f = [fS, fE]. Search Based Features: fS (v, ψ). These features depend on the state of the search only and does not probe the environment
+- (xv, yv) - location of node in coordinate axis of occupancy map. - (xvg , yvg ) - location of goal in coordinate axis of occupancy map. - gv - cost(number of expansions) of shortest path to start. - hEUC - Euclidean distance to goal. - hMAN - Euclidean distance to goal. - dT REE - Depth of v in the search tree so far.
+Environment Based Features: fE (v, s). These features depend upon the environment uncovered so far, more specifically the vertices in I.
+- xOBS, yOBS, dOBSX - coordinates and distance of closest node in I to v - xOBSX , yOBSX , dOBSX - coordinates and distance of closest node in I to v in terms of x-coordinate. - xOBSY , yOBSY , dOBSY - coordinates and distance of closest node in I to v in terms of y-coordinate
+We discuss more about alternate representations and feature extraction ideas in Appendix F. For the 4D planning problems, we use a slightly altered feature representation which is 8-dimensional.
+- Normalized Euclidean distance to start. - Normalized Euclidean distance to goal. - Dot product between start, vertex and goal. - Normalized Eubins distance to start. - Normalized Eubins distance to goal. - Normalized heading of vertex. - Normalized distance of vertex from closest obstacle. - Dot product between distance to obstacle and heading of vertex.
+Such a feature representation is chosen as these terms are easy to compute and are informative in estimating the utility of expanding a vertex. The learner is represented using a feed-forward neural network with two fully connected hidden layers containing [100, 50] units and ReLu activation. The model takes as input a feature vector f ∈ F for the pair (v, s) and outputs a scalar cost-to-go estimate. The network is optimized using RMSProp [117]. A mini-batch size of 64 and a base learning rate of 0.01 is used. The network architecture and hyper-parameters are kept constant across all environments. For experiments with the UAV, we use a random forest regression [76].
+D. Case Study B: Helicopter Path Planning
+1) Dataset Creation: The 2D world maps are created by randomly distributing geometric objects such as rectangles and
+
+
+Dataset Sample Worlds SAIL SL CEM QL hEUC hMAN A* MHA*
+Alternating Gaps 0.039 0.432 0.042 1.000 1.000 1.000 1.000 1.000
+Single Bugtrap 0.158 0.214 0.057 1.000 0.184 0.192 1.000 0.286
+Shifting Gaps 0.104 0.464 1.000 1.000 0.506 0.589 1.000 0.804
+Forest 0.036 0.043 0.048 0.121 0.041 0.043 1.000 0.075
+Bugtrap+Forest 0.147 0.384 0.182 1.000 0.410 0.337 1.000 0.467
+Gaps+Forest 0.221 1.000 1.000 1.000 1.000 1.000 1.000 1.000
+Mazes 0.103 0.238 0.479 0.399 0.185 0.171 1.000 0.279
+Multiple Bugtraps 0.479 0.480 1.000 0.835 0.648 0.617 1.000 0.876
+Fig. 12. Normalized cost of baselines on different environments (best in bold). The cost corresponds to average expansions on a test set of planning problems normalized between [200, 5000] (max possible: 40000). Planning parameters are - map size: 200 × 200,Ttrain = 1100, Ttest = 20000. Data sizes are: train(200), test(100), validation(70). NONAMEparameters are - k : 50, β0 = 0.7. NONAME, CEM and QL are run for N : 15 iterations. SL uses m : 600.
+circles according to hand design parametric distribution. Each environment class is representative of challenging artifacts in motion planning such as narrow corridors, local minimas, single homotopies. Hetergenous environments are created to show that the heuristic can deal with such problems as well. For the experiment with a real robot, a dataset of mazes was created and a real life maze was simulated using no-fly-zones. 2) Clairoyant Oracle: We use the backward Djikstra algorithm as the clairvoyant oracle. It is executed till it expands to all states, or till it reaches a cost-to-go limit. We note that using such an oracle for higher dimensions might be infeasible in higher dimensions and discuss remedies in Section VIII. 3) Practical Algorithm Implementation: Since the size of the action space changes as more states are expanded, the SAIL algorithm requires a forward pass through the model for every action individually unlike the usual practice of using a network that outputs cost-to-go estimate for all actions in one pass as in [85]. This can get computationally demanding as the search progresses (O (N ) in actions). Instead, we use a priority queue as O which sorts vertices in increasing order of the cost-to-go estimates as is usually done in search based motion planning. The vertex on the top of the list is then expanded. We use two priority queues, sorted by the learner and oracle’s cost-to-go estimates respectively. This allows us to take actions in O (1) but forces us to freeze the Q-value for a vertex to whenever it is inserted in O. Despite this artificial restriction over the policy class Π, we are able to learn efficient policies in practice. However, we wish to relax this requirement in future work. We also analyze the time complexity in Appendix G.
+E. Analysis of Results
+Fig. 12 shows the normalized evaluation cost of all algorithms on various datasets. Snapshots of planning with different heuristics are shown in Fig. 13 and Fig. 14 (a). Convergence of different learning algorithms are shown in Fig. 14 (b). We present a set of key observations to summarize these results.
+O 1. SAIL has a consistently competitive performance across all datasets.
+Fig. 12 shows that SAIL learns a better search policy than any other baseline across all but one environments. It maintains performance from homogenous to heterogenous environments.
+O 2. SAIL has faster convergence than all learning baselines.
+Fig. 14 (b) shows that on the ‘Forest’ dataset, SAIL converges by 6th iteration, while CEM takes 12 and QL does not converge. SAIL also converges quickly (by the 8th iteration) across datasets.
+O 3. SAIL is able to detect and escape local minima.
+A classic case in motion planning is the bugtrap (Fig. 1 (b) ) which traps a greedy search in a local minimum. Fig. 13 (a) and Fig. 13 (f) shows that when trained on such distributions, SAIL is able to detect these artifacts and smartly escape them by exploring in different directions.
+O 4. SAIL is able to exploit the relative configuration of obstacles and environment structure.
+In a maze world with rectilinear hallways (Fig. 13 (e)), SAIL learns to quickly find a wall and then concentrate the search along the axes. In Fig. 13 (d), SAIL focuses only on regions where there is a high probability of a gap and skids along obstacles otherwise.
+F. Case Study A: Adaptive behaviour of SAIL
+We take a closer look at the behaviour of SAIL in response to a change in the distribution of worlds that it is being trained on P (φ). Consider the scenario illustrated in Fig. 14 (a). We create two datasets. Both datasets have a wall in the middle of the environment, with a gap in the wall. For dataset 1, the gap can occur uniformly randomly along the y-axis. For dataset 2, the gap either occurs with 70% probability at the bottom and 30% probability at the top.
+
+
+(f) Multiple Bugtraps (e) Mazes (d) Gaps + Forest (c) Bugtrap + Forest (b) Forest (a) Single Bugtrap
+Intermediate snapshots of SAIL Final snapshot of hEUC
+Final snapshot of SL
+Fig. 13. Evolution of search frontier (expanded(blue), invalid(black), unexpanded(white)) of SAIL compared with final snapshot of supervised learning (SL) and hEUC across all environments. SAIL expands far less states.
+For dataset 1, SAIL learns to approach the centre of the environment first and then search along the wall till it finds a gap. This is in response to the fact that the gap can occur anywhere and hence this is a cost efficient strategy. Contrast this to a greedy search that get stuck expanding states near the top of the wall.
+For dataset 2, SAIL learns to approach the bottom of the environment first and then search along the wall. This is in response to the gaps occuring at the bottom of the wall. The greedy search is non responsive to the change in distribution and gets stuck expanding states near the top again.
+An important application of heuristic learning is to speed up high dimension search. An application of particular relevance to us is an autonomous helicopter [18]. A class of environment in which the helicopter has to plan in is a canyon like
+environment. Since the system moves at a speed of 30m/s, it has to produce a plan in real-time (within 200ms) otherwise it risks reaching states from which collision is inevitable.
+We use SAIL to learn a heuristic that guides search in such environments. We collect a dataset by generating canyons using a parametric distribution as showing in Fig. 15 (a). A lattice, with the specifications described in Section VII-A is created. As a baseline, we run A* with Dubins distance as the heuristic on this problem. As shown in Fig. 15 (b), this ends up expanding a large number of vertices (2531). This is because the Dubins distance is not the optimal cost to do. The under-estimation of this heuristic results in a large number of vertices being expanded and hence a long planning time (7000ms).
+We also run a greedy search using the Dubins distance
+
+
+Database 2:
+Alternating gaps
+70% gaps below 30% gaps above
+SAIL heads for lower section first and on encountering the wall searches upwards till it finds the gap
+Database 1:
+Shifting gaps
+Gap is uniformly distributed vertically
+SAIL heads towards the centre section first and on encountering the wall searches both directions till it finds the gap
+hEUC greedily heads to goal and gets stuck
+Intermediate snapshots of SAIL Final snapshot of hEUC
+Training databases
+hEUC greedily heads to goal and gets stuck
+0 10 20 30 40
+0
+2000
+4000
+6000
+8000
+10000
+Average expansions (validation)
+Iterations
+SaIL
+CQELM
+0 10 20 30 40
+0
+2000
+4000
+6000
+8000
+10000
+Average expansions (validation)
+SAIL Iterations
+Forest Gaps+Forest Maze
+(a) (b)
+(Forest)
+Fig. 14. (a) SAIL learns to adapt to different environment distributions by directing search to areas where it expects to find gaps. Note SAIL does not have information about the entire environment, only the explored part. (b) On the ‘Forest’ dataset, SAIL converges faster that CEM and QL to a good policy. SAIL also converges consistently to a good policy across environments ‘Gaps’, ‘Gaps+Forest’, ‘Maze.’
+(a) (b)
+(c) (d)
+Fig. 15. Experiments on path planning for an autonomous helicopter in a canyon environment. The environment is motivated from planning challenges as described in [18]. (a) Dataset of canyon-like environments generated by a parametric distribution. (b) The search tree from A* with Dubins distance heuristic on a test environment. The start point is shown by the axes. The expanded edges are shown in yellow. The planned path is shown in green. A* expands 2531 vertices and takes 7000ms. (c) The search tree for greedy search with Dubins distance heuristic. It expands 142 vertices and takes 500ms. Note that most of the wasted expansions are where the tree tries to search through the canyon wall (d) SAIL expands only 18 vertices and takes 100ms. It hugs the canyon wall till it reaches the goal.
+
+
+(a) (b)
+(c) (d)
+(e) (f)
+(g)
+Time: 0 sec Time: 7 sec Time: 19 sec
+Fig. 16. Experiments on path planning for a real quadrotor flying at high speed 5m/s while avoiding no fly zones that represent a maze like scenario. (a) A dataset of mazes created from a parametric distribution (b) The search graph of A* on the environment. It expands 1910 states in the 1000ms time budget without finding a path (c) The greedy search with Dubins distance expands 661 vertices and takes 400ms. The remaining time is used to relax the path shown in green. (d) SAIL outperforms both and finds a path by expanding only 180 vertices in 120ms. (e) The DJI M100 used for our experiments (f) An experiment where SAIL is running onboard the robot. A set of no fly zones is created and the robot has to fly through it. The robot view and onboard imagery is shown (g) A time lapse of the search tree as the robot replans while performing the mission. We can see that the search tree remains sparse through out and SAIL is always able to find a path.
+
+
+as a heuristic. We see that for these kind of environments, greedy search performs pretty good - the number of vertices expanded is 142 and planning time is 500ms. However, the greedy search expends search effort trying to search for a tunnel through the canyon. SAIL has much better performance than either of these baselines. It is able to learn a heuristic that expands only 18 vertices with a search time of 100ms. The features used by SAIL are minimialistic and are enlisted in Section VII-C1. Among those features are the Dubins distance to the goal and the direction vector to the nearest obstacle. By examining the search tree produced by SAIL, we observe that it learns a trade-off between following the Dubins distance heuristic and not expanding states that are pointing into the canyon wall (as such states would not result in a feasible path eventually).
+G. Case Study C: Quadrotor Path Planning
+We also applied this approach to a real quadrotor which has to navigate in an environment at high speed 5m/s while avoiding no fly zones. No fly zones can result from areas that a UAV cannot fly over because of risks to property or from other vehicles in the area. These no fly zones can be arbitrary in complexity thus creating artifacts such as a maze as shown in Fig 16. We create a dataset of such mazes by means of a parametric distribution as shown in Fig 16 (a). We give a time budget of 1000ms for planners to solve the problem. A* with Dubins heuristic is unable to solve the problem in the time limit as shown in Fig 16 (b). This is because the Dubins distance vastly under-estimates the distance to the goal in this environment. A* expands 1910 states before being terminated. Greedy search with Dubins heuristic is able to find a path after 661 expansions within the time budget (in 400ms). The remaining time is spent relaxing the path found. The greedy behaviour is beneficial in this environment because it results in a wall following like behaviour. However the algorithm wastes search effort expanding states perpendicular to the wall which would lead to inevitable collision. SAIL outperforms both algorithms by finding a path in 180 expansions (in 120ms). The remaining time is spent relaxing the path. As can be seen for the search graph, it focuses on expanding paths perpendicular to the wall. It learns to not expand vertices that point into the wall since the oracle shows the cost to go of such nodes to be ∞. We also evaluated SAIL on board a DJI M100 quadrotor equipped with a TX2 computer. We created a synthetic maze with no fly zones and commanded the robot to fly through it (Fig 16 (e-f) ). SAIL is able to find a path expanding a sparse number of vertices. As the robot follows the path, the algorithm is able to consistently replan and find a path consistently without expanding too many states (Fig 16 (g) ).
+VIII. DISCUSSION AND FUTURE WORK
+We presented a novel data-driven imitation learning framework to learning planning policies. Our approach trains a policy to imitate a clairvoyant oracle that has full information
+about the world and can compute optimal planning decisions. We examined two problem domains - informative path planning and search based planning. We evaluated our approach in both these domains and showed that the learnt policy can outperform state-of-the-art approaches. We now discuss a set of relevant questions and directions for future work.
+A. When does this framework lead to good policies? What are some failure cases?
+MDP framework provides an elegant way of posing problems where the complete state of the problem space is known. The value of an action for a given state in an MDP is given by equation 22.
+Qtπ(s, a) = R (s, a) + Es′∼P (s′|s,a)
+[Vtπ−1(s′)] (22)
+Vtπ(s) =
+T
+∑
+i=t
+Est∼P (si|π,i,s) [R (si, π(si))] (23)
+The optimal MDP policy maximizes the expected cumula
+tive reward, i.e π∗(st) ∈ arg max
+π∈Π
+Vtπ (st ).
+However there are 2 major challenges that POMDP solvers face
+• Computing the expectation over the state space. Since the state space of most of the problems worth solving is large, computing an expectation over such state space needs a large number, making it expensive to evaluate online. • Keep track of evolving uncertainty about the state space over the planning horizon.
+Our approach solves the first challenge through data driven techniques - the MDP solvers are used over sampled MDP problems to train a policy on the expected distribution of problems. The hallucinating oracle is similar in nature to a QMDP algorithm [81], an effective approximate solution to POMDPs, which takes the best action on the current posterior. However, while QMDP requires maintaining an explicit posterior, our framework does not. QMDP has been shown to be very successful where explicit information gathering behaviour is not required [63, 54] - the belief collapses irrespective of the action. Hence this optimization assumes a fixed belief and does not account for evolving belief over time, (which is challenge 2 for POMDP’s). This implies there is no motivation for the MDP solver and hence the learnt policy to change the belief. These kind of methods work quite well in POMDP problems where the required changes in belief can be attained by actions that are rewarding as well. This is very apt in the problem we address - as the set of actions are constrained to candidate nodes in the open list, no single action is very informative. It suffices to expand the best node under the current belief and continue to update the belief as the open list evolves. And there exists no action that is not rewarding while reducing the uncertainty. We note that this is not true for all learning in planning paradigms. For example, when learning to collision check [19], a policy that actively reduces uncertainty about the world is effective.
+
+
+(a) (b)
+Fig. 17. The robot in a dark room problem. The robot is uncertain about the location of a door and the only way to collapse that uncertainty is to pull a light switch. (a) A clairvoyant oracle is not incentivized to flip the switch and hence the robot does not learn to collapse uncertainty (b) The optimal POMDP policy would be to flip the switch and then head for the door.
+To illustrate the failure case, we present a simple scenario as shown in Fig 17. We have a ‘trapped robot’ whose task is to escape from a room, i.e. it gets a reward for escaping and penalization for staying in the room. The room is dark, i.e. the robot cannot observe the location of the door. It can performa actions such as moving in the room. It can also perform an action of flicking on the light switch. On performing such an action, it receives an observation containing the location of the door. An optimal POMDP policy would always choose this action, collapse uncertainty about the door location and subsequently head straight for the door. However, imitation of clairvoyant oracles do not provide such behaviours. The oracle, at training, always guides the robot towards the door to maximize reward and is not incentivized to flip the light switch. The policy learns a blind search pattern which takes a long time to find the door. For such POMDP problems, one way forward would be to incentivize the oracle at train time to reduce the uncertainty as suggested by the POMDP-lite approach [15]. While POMDPlite quantifies uncertainty reduction as L1-norm of the belief change, this can be hard to compute for the space of world maps. Using approximations to this belief change would be an interesting direction of future work.
+B. How can we incorporate solution cost in addition to search effort in this framework?
+While our framework ignores the cost of a solution, we note that finding feasible solutions quickly is the core motivation of a number of high dimensional planning problems which have historically resorted to sampling based approaches [67]. Hence, one can apply our framework to such problems to produce potentially faster solutions. We also note that when planning on locally connected lattices for geometric planning problems, minimizing the number of expansions generally leads to near-optimal solutions (unit cost for each valid edge). However, if we really cared about near optimal solutions, the framework of Multi-heuristic A* (MHA*) [3] can be easily adopted. In such a framework, any heuristic function [86] can be used in tandem with an anchored search which uses an inflated admissible heuristic. Hence we can simply replace our Search function with MHA*.
+The bi-objective criteria of solution cost and search effort is best reasoned about in the paradigm of anytime planning. In this paradigm, an algorithm traces out the pareto-frontier [22] - finds a feasible solution quickly and iteratively improves it. In this paradigm, SAIL trains a heuristic that displays a behaviour we would expect in the first iteration. A direction of future work would be to learn anytime heuristics that minimize search effort initially to and solution cost eventually.
+C. Can we generalize this framework to sampling based planners?
+The SAIL framework defines Search in a very general way - the underlying implicit graph can also be a tree and the expansion operation can be a local steering operation akin to the framework of EST [48]. The oracle design is an open question - a plausible oracle is growing a backward tree from the goal and using a k-NN value function approximator. Another paradigm to consider is when the Expand operation is a call to a sampler. For example, the framework in Randomized A* (RA*) [28] proceeds by selecting a node of the search tree using some criteria and sampling around it.
+Recently, [49] proposed a framework for learning sampling distributions from optimal paths during training by using a conditional variational auto-encoder (CVAE). However, in this framework sampling and planning are decoupled, i.e. the sampling policy learns a good stationary distribution from which samples are generated and provided to the planner. Hence the planner does not adapt during the planning cycle. Such a stationary distribution can be very hard to learn as directly predicting the optimal path requires conditioning on a lot of information about the environment.
+SAIL can be extended to learn sampling policies that address this problem. The CVAE can condition on the state of the search (similar to the feature vector used by SAIL). The labels can be obtained by a backward tree from the goal grown during training. The iterative learning process of SAIL will ensure that the CVAE is trained on the distribution of search state actually encountered rather than simply using the optimal path.
+
+
+D. Incorporating noise in transition and observation for IPP problems
+The informative path planning problem that we defined in Section II-A1 and subsequently mapped to a POMDP in Section III-B consider a deterministic measurement and utility function. This can always be relaxed in an ad-hoc way: the occupancy map used to represent ψt is essentially a Bayes’ filter and can handle noisy observations, and the policy can also handle motion uncertainty since during the training phase, data collected in the initial stages is from random motions of the learner.
+However, if one is to formally incorporate noise, the mapping needs to be re-examined. The crucial change arises from the fact that the utility function F is no longer dependent only on the sequence of vertices visited {vi}it=1 and the world φ. It
+also depends on the actual observations received {yi}it=1, i.e. the utility function needs to be redefined to have the following arguments F ({vi, yi}it=1, φ).
+To provide a concrete example, we re-examine our application of 3D reconstruction of objects in the environment presented in Section. VI-A. We had assumed that each vertex vi in a path ξ is associated with a unique measurement yi. The union of all measurements defined the coverage map C which in turn defined the utility. Since this unique measurement assumption is no longer true, the coverage map has to explicitly consider the actual measurements received. This results in a utility function F ({vi, yi}it=1, φ) that depends on measurements as well.
+Keeping this important change in mind, we redefine the mapping to POMDP. The state is defined to contain all information that is required to define the reward, observation and transition functions. Let the state be the set of nodes visited and measurements received as well as the underlying world, st = {{vi, yi}it=1, φ}. At the start of an episode, a
+world is sampled from a prior distribution φ ∼ P (φ) along with a graph G ∼ P (G). The initial state is assigned by setting s1 = {v1, y1, φ}. Note that the state st is partially observable due to the hidden world map φ.
+We define the action at to be the next desired node to visit. The reward function is now defined as a function of the state st only as the marginal gain in utility on receiving {vt, yt}. The marginal gain of the utility function F is ∆F
+({vt, yt} | {vt, yt}t−1
+i=1, φ) = F ({vi, yi}it=1, φ) − F
+({vi, yi}t−1
+i=1, φ). Additionally, the reward is set to −∞
+whenever the cost budget is violated, i.e. R (s, a) =
+{
+∆F
+({vt, yt} | {vt, yt}t−1
+i=1, φ) if T ({vi}it=1, φ) ≤ B
+−∞ otherwise (24)
+The state transition function, Ω (s, a, s′), is defined by the execution model P (vt+1|at, φ) and the measurement model P (yt+1|vt+1, φ). Given state st, the observation is now deterministic because it is contained in the state, i.e. ot = yt.
+IX. ACKNOWLEDGEMENT
+We would like to thank Silvio Maeta, Vishal Dugar and Brian McAllister for help with flight test results on the UAV. We would like to thank Shushman Choudhury for insightful discussions and feedback on the paper. We would like to acknowledge the support from ONR grant N000141310821 and NASA contract NNX17CS56C.
+REFERENCES
+[1] Mart ́ın Abadi, Ashish Agarwal, Paul Barham, Eugene Brevdo, Zhifeng Chen, Craig Citro, Gregory S. Corrado, Andy Davis, Jeffrey Dean, Matthieu Devin, Sanjay Ghemawat, Ian J. Goodfellow, Andrew Harp, Geoffrey Irving, Michael Isard, Yangqing Jia, Rafal Jo ́zefowicz, Lukasz Kaiser, Manjunath Kudlur, Josh Levenberg, Dan Mane ́, Rajat Monga, Sherry Moore, Derek Gordon Murray, Chris Olah, Mike Schuster, Jonathon Shlens, Benoit Steiner, Ilya Sutskever, Kunal Talwar, Paul A. Tucker, Vincent Vanhoucke, Vijay Vasudevan, Fernanda B. Vie ́gas, Oriol Vinyals, Pete Warden, Martin Wattenberg, Martin Wicke, Yuan Yu, and Xiaoqiang Zheng. Tensorflow: Large-scale machine learning on heterogeneous distributed systems. CoRR, abs/1603.04467, 2016. URL http://arxiv.org/abs/1603.04467. [2] Pieter Abbeel and Andrew Y Ng. Apprenticeship learning via inverse reinforcement learning. In Proceedings of the twenty-first international conference on Machine learning, page 1. ACM, 2004. [3] Sandip Aine, Siddharth Swaminathan, Venkatraman Narayanan, Victor Hwang, and Maxim Likhachev. Multi-heuristic a. The International Journal of Robotics Research, 2016.
+[4] Shahab Jabbari Arfaee, Sandra Zilles, and Robert C Holte. Learning heuristic functions for large state spaces. Artificial Intelligence, 2011.
+[5] Sankalp Arora and Sebastian Scherer. Randomized algorithm for informative path planning with budget constraints. In ICRA, 2017. [6] Kai Arulkumaran, Marc Peter Deisenroth, Miles Brundage, and Anil Anthony Bharath. A brief survey of deep reinforcement learning. arXiv preprint arXiv:1708.05866, 2017.
+[7] John Asmuth and Michael L Littman. Approaching bayes-optimalilty using monte-carlo tree search. In Proc. 21st Int. Conf. Automat. Plan. Sched., Freiburg, Germany, 2011.
+[8] Mohak Bhardwaj, Sanjiban Choudhury, and Sebastian Scherer. Learning heuristic search via imitation. In CoRL, 2017. [9] Byron Boots, Sajid M Siddiqi, and Geoffrey J Gordon. Closing the learning-planning loop with predictive state representations. The International Journal of Robotics Research, 30(7):954–966, 2011. [10] Ronen I Brafman and Moshe Tennenholtz. R-maxa general polynomial time algorithm for near-optimal
+
+
+reinforcement learning. Journal of Machine Learning Research, 3(Oct):213–231, 2002.
+[11] John Canny. The complexity of robot motion planning. MIT press, 1988. [12] Kai-Wei Chang, Akshay Krishnamurthy, Alekh Agarwal, Hal Daume, and John Langford. Learning to search better than your teacher. In ICML, 2015. [13] Benjamin Charrow, Gregory Kahn, Sachin Patil, Sikang Liu, Ken Goldberg, Pieter Abbeel, Nathan Michael, and Vijay Kumar. Information-theoretic planning with trajectory optimization for dense 3d mapping. In RSS, 2015. [14] Chandra Chekuri and Martin Pal. A recursive greedy algorithm for walks in directed graphs. In FOCS, 2005. [15] Min Chen, Emilio Frazzoli, David Hsu, and Wee Sun Lee. Pomdp-lite for robust robot planning under uncertainty. arXiv:1602.04875, 2016.
+[16] Yuxin Chen, Shervin Javdani, Amin Karbasi, J. Bagnell, Siddhartha Srinivasa, and Andreas Krause. Submodular surrogates for value of information. In AAAI, 2015. [17] Yuxin Chen, S. Hamed Hassani, and Andreas Krause. Near-optimal bayesian active learning with correlated and noisy tests. CoRR, abs/1605.07334, 2016. [18] Sanjiban Choudhury, Sankalp Arora, and Sebastian Scherer. The planner ensemble and trajectory executive: A high performance motion planning system with guaranteed safety. In AHS 70th Annual Forum, Montreal, Quebec, Canada, 2014.
+[19] Sanjiban Choudhury, Shervin Javdani, Siddhartha Srinivasa, and Sebastian Scherer. Near-optimal edge evaluation in explicit generalized binomial graphs. In NIPS, 2017. [20] Sanjiban Choudhury, Ashish Kapoor, Gireeja Ranade, and Debadeepta Dey. Learning to gather information via imitation. In ICRA, 2017. [21] Sanjiban Choudhury, Ashish Kapoor, Gireeja Ranade, and Debadeepta Dey. Adaptive information gathering via imitation learning. In RSS, 2017. [22] Shushman Choudhury, Christopher M Dellin, and Siddhartha S Srinivasa. Pareto-optimal search over configuration space beliefs for anytime motion planning. In IROS, 2016. [23] William W Cohen and Vitor R Carvalho. Stacked sequential learning. In International Joint Conference on Artificial Intelligence. Citeseer, 2005.
+[24] Hugh Cover, Sanjiban Choudhury, Sebastian Scherer, and Sanjiv Singh. Sparse tangential network (spartan): Motion planning for micro aerial vehicles. In ICRA. IEEE, 2013. [25] Hal Daume ́, John Langford, and Daniel Marcu. Searchbased structured prediction. Machine learning, 75(3): 297–325, 2009. [26] Christopher M Dellin and Siddhartha S Srinivasa. A unifying formalism for shortest path problems with expensive edge evaluations via lazy best-first search over paths with edge selectors. In ICAPS, 2016.
+[27] Christopher M Dellin, Kyle Strabala, G Clark Haynes, David Stager, and Siddhartha S Srinivasa. Guided manipulation planning at the darpa robotics challenge trials. In Experimental Robotics, 2016.
+[28] Rosen Diankov and James Kuffner. Randomized statistical path planning. In 2007 IEEE/RSJ International Conference on Intelligent Robots and Systems, pages 1–6. IEEE, 2007. [29] Dmitri Dolgov, Sebastian Thrun, Michael Montemerlo, and James Diebel. Practical search techniques in path planning for autonomous driving. AAAI, 2008. [30] Yan Duan, Xi Chen, Rein Houthooft, John Schulman, and Pieter Abbeel. Benchmarking deep reinforcement learning for continuous control. In International Conference on Machine Learning, pages 1329–1338, 2016. [31] Lester E Dubins. On curves of minimal length with a constraint on average curvature, and with prescribed initial and terminal positions and tangents. 1957. [32] Vishal Dugar, Sanjiban Choudhury, and Sebastian Scherer. A κite in the wind: Smooth trajectory optimization in a moving reference frame. In Robotics and Automation (ICRA), 2017 IEEE International Conference on, pages 109–116. IEEE, 2017. [33] Vishal Dugar, Sanjiban Choudhury, and Sebastian Scherer. Smooth trajectory optimization in wind: First results on a full-scale helicopter. In AHS International 73rd Annual Forum, Forth Worth, Texas, USA, volume 1, 2017. [34] Chelsea Finn, Sergey Levine, and Pieter Abbeel. Guided cost learning: Deep inverse optimal control via policy optimization. In International Conference on Machine Learning, pages 49–58, 2016. [35] Caelan Reed Garrett, Leslie Pack Kaelbling, and Toma ́s Lozano-Pe ́rez. Learning to rank for synthesizing planning heuristics. [36] Daniel Golovin and Andreas Krause. Adaptive submodularity: Theory and applications in active learning and stochastic optimization. JAIR, 2011. [37] Daniel Golovin, Andreas Krause, and Debajyoti Ray. Near-optimal bayesian active learning with noisy observations. In NIPS, 2010. [38] Ian Goodfellow, Yoshua Bengio, and Aaron Courville. Deep learning. MIT press, 2016. [39] Anupam Gupta, Viswanath Nagarajan, and R Ravi. Approximation algorithms for optimal decision trees and adaptive tsp problems. In International Colloquium on Automata, Languages, and Programming, 2010.
+[40] Saurabh Gupta, James Davidson, Sergey Levine, Rahul Sukthankar, and Jitendra Malik. Cognitive mapping and planning for visual navigation. In CVPR, 2017. [41] Nikolaus Hansen. The cma evolution strategy: A tutorial. arXiv preprint arXiv:1604.00772, 2016.
+[42] Matthew Hausknecht and Peter Stone. Deep recurrent q-learning for partially observable mdps. In 2015 AAAI Fall Symposium Series, 2015.
+[43] Lionel Heng, Alkis Gotovos, Andreas Krause, and Marc
+
+
+Pollefeys. Efficient visual exploration and coverage with a micro aerial vehicle in unknown environments. In ICRA, 2015. [44] Jo ̈rg Hoffmann and Bernhard Nebel. The ff planning system: Fast plan generation through heuristic search. Journal of Artificial Intelligence Research, 2001.
+[45] Geoffrey A Hollinger and Gaurav S Sukhatme. Sampling-based motion planning for robotic information gathering. In RSS, 2013. [46] Geoffrey A Hollinger, Brendan Englot, Franz S Hover, Urbashi Mitra, and Gaurav S Sukhatme. Active planning for underwater inspection and the benefit of adaptivity. IJRR, 2012. [47] Geoffrey A Hollinger, Urbashi Mitra, and Gaurav S Sukhatme. Active classification: Theory and application to underwater inspection. In Robotics Research, pages 95–110. Springer, 2017. [48] David Hsu, J-C Latcombe, and Stephen Sorkin. Placing a robot manipulator amid obstacles for optimized execution. In Assembly and Task Planning, 1999.(ISATP’99) Proceedings of the 1999 IEEE International Symposium on, pages 280–285. IEEE, 1999. [49] Brian Ichter, James Harrison, and Marco Pavone. Learning sampling distributions for robot motion planning. arXiv preprint arXiv:1709.05448, 2017.
+[50] Stefan Isler, Reza Sabzevari, Jeffrey Delmerico, and Davide Scaramuzza. An information gain formulation for active volumetric 3d reconstruction. In ICRA, 2016. [51] Rishabh K Iyer and Jeff A Bilmes. Submodular optimization with submodular cover and submodular knapsack constraints. In NIPS, 2013. [52] Shervin Javdani, Matthew Klingensmith, J. Andrew Bagnell, Nancy Pollard, and Siddhartha Srinivasa. Efficient touch based localization through submodularity. In ICRA, 2013. [53] Shervin Javdani, Yuxin Chen, Amin Karbasi, Andreas Krause, J. Andrew Bagnell, and Siddhartha Srinivasa. Near optimal bayesian active learning for decision making. In AISTATS, 2014. [54] Shervin Javdani, Siddhartha S Srinivasa, and J Andrew Bagnell. Shared autonomy via hindsight optimization. In RSS, 2015. [55] Sergio Jime ́nez, Toma ́s De La Rosa, Susana Ferna ́ndez, Fernando Ferna ́ndez, and Daniel Borrajo. A review of machine learning for automated planning. The Knowledge Engineering Review, 2012.
+[56] Leslie Pack Kaelbling, Michael L Littman, and Anthony R Cassandra. Planning and acting in partially observable stochastic domains. Artificial Intelligence, 1998. [57] Gregory Kahn, Tianhao Zhang, Sergey Levine, and Pieter Abbeel. Plato: Policy learning using adaptive trajectory optimization. In ICRA, 2017. [58] Sertac Karaman and Emilio Frazzoli. Sampling-based algorithms for optimal motion planning. The International Journal of Robotics Research, 30(7):846–894,
+2011. [59] Peter Karkus, David Hsu, and Wee Sun Lee. Qmdp-net: Deep learning for planning under partial observability. arXiv preprint arXiv:1703.06692, 2017.
+[60] Michael J Kearns, Yishay Mansour, and Andrew Y Ng. Approximate planning in large pomdps via reusable trajectories. In Advances in Neural Information Processing Systems, pages 1001–1007, 2000. [61] A. Kelly and B. Nagy. Reactive nonholonomic trajectory generation via parametric optimal control. International Journal of Robotics Research, 22(7-8):583–601, 2003. [62] Jens Kober, J Andrew Bagnell, and Jan Peters. Reinforcement learning in robotics: A survey. The International Journal of Robotics Research, 32(11):1238–1274, 2013. [63] Michael Koval, Nancy Pollard, and Siddhartha Srinivasa. Pre- and post-contact policy decomposition for planar contact manipulation under uncertainty. In RSS, 2014. [64] Andreas Krause and Daniel Golovin. Submodular function maximization. Tractability: Practical Approaches to Hard Problems, 2012.
+[65] Andreas Krause and Carlos Guestrin. Near-optimal observation selection using submodular functions. In AAAI, 2007. [66] Andreas Krause, Jure Leskovec, Carlos Guestrin, Jeanne VanBriesen, and Christos Faloutsos. Efficient sensor placement optimization for securing large water distribution networks. Journal of Water Resources Planning and Management, 2008.
+[67] James J Kuffner and Steven M LaValle. RRT-Connect: An efficient approach to single-query path planning. In ICRA, 2000. [68] Hanna Kurniawati, David Hsu, and Wee Sun Lee. Sarsop: Efficient point-based pomdp planning by approximating optimally reachable belief spaces. In RSS, 2008. [69] John Langford and Alina Beygelzimer. Sensitive error correcting output codes. In COLT, volume 3559, pages 158–172. Springer, 2005. [70] Jean-Paul Laumond, S Sekhavat, and F Lamiraux. Guidelines in nonholonomic motion planning for mobile robots. In Robot motion planning and control, pages 1–53. Springer, 1998. [71] S. M. LaValle. Planning Algorithms. Cambridge University Press, Cambridge, U.K., 2006. [72] Steven M LaValle and James J Kuffner. Randomized kinodynamic planning. IJRR, 2001. [73] Sergey Levine and Vladlen Koltun. Guided policy search. In ICML, 2013. [74] Hui Li, Xuejun Liao, and Lawrence Carin. Multi-task reinforcement learning in partially observable stochastic environments. Journal of Machine Learning Research, 2009. [75] Jiwei Li, Will Monroe, Alan Ritter, Michel Galley,
+
+
+Jianfeng Gao, and Dan Jurafsky. Deep reinforcement learning for dialogue generation. arXiv preprint arXiv:1606.01541, 2016.
+[76] Andy Liaw and Matthew Wiener. Classification and regression by randomforest. [77] Maxim Likhachev and Dave Ferguson. Planning long dynamically feasible maneuvers for autonomous vehicles. The International Journal of Robotics Research, 2009. [78] Zhan Wei Lim, David Hsu, and Wee Sun Lee. Adaptive stochastic optimization: From sets to paths. In NIPS. 2015. [79] Zhan Wei Lim, David Hsu, and Wee Sun Lee. Adaptive informative path planning in metric spaces. IJRR, 2016. [80] Michael L Littman and Richard S Sutton. Predictive representations of state. In Advances in neural information processing systems, pages 1555–1561, 2002.
+[81] Michael L. Littman, Anthony R. Cassandra, and Leslie Pack Kaelbling. Learning policies for partially observable environments: Scaling up. In ICML, 1995. [82] Miao Liu, Xuejun Liao, and Lawrence Carin. Online expectation maximization for reinforcement learning in pomdps. In IJCAI, 2013. [83] Omid Madani, Steve Hanks, and Anne Condon. On the undecidability of probabilistic planning and related stochastic optimization problems. Artificial Intelligence, 147(1-2):5–34, 2003. [84] David A McAllester and Satinder Singh. Approximate planning for factored pomdps using belief state simplification. In Proceedings of the Fifteenth conference on Uncertainty in artificial intelligence, pages 409–416. Morgan Kaufmann Publishers Inc., 1999. [85] Volodymyr Mnih, Koray Kavukcuoglu, David Silver, Andrei A. Rusu, Joel Veness, Marc G. Bellemare, Alex Graves, Martin Riedmiller, Andreas K. Fidjeland, Georg Ostrovski, Stig Petersen, Charles Beattie, Amir Sadik, Ioannis Antonoglou, Helen King, Dharshan Kumaran, Daan Wierstra, Shane Legg, and Demis Hassabis. Human-level control through deep reinforcement learning. Nature, 2015. [86] Venkatraman Narayanan, Sandip Aine, and Maxim Likhachev. Improved multi-heuristic a* for searching with uncalibrated heuristics. In Eighth Annual Symposium on Combinatorial Search, 2015.
+[87] Erik Nelson and Nathan Michael. Informationtheoretic occupancy grid compression for high-speed information-based exploration. In Intelligent Robots and Systems (IROS), 2015 IEEE/RSJ International Conference on, pages 4976–4982. IEEE, 2015. [88] Andrew Y Ng and Michael Jordan. Pegasus: A policy search method for large mdps and pomdps. In Proceedings of the Sixteenth conference on Uncertainty in artificial intelligence, pages 406–415. Morgan Kaufmann Publishers Inc., 2000. [89] Brian Paden, Valerio Varricchio, and Emilio Frazzoli. Verification and synthesis of admissible heuristics for
+kinodynamic motion planning. IEEE Robotics and Automation Letters, 2(2):648–655, 2017. [90] Christos H Papadimitriou and John N Tsitsiklis. The complexity of markov decision processes. Mathematics of operations research, 12(3):441–450, 1987.
+[91] Judea Pearl. Heuristics: intelligent search strategies for computer problem solving. 1984. [92] Jan Peters and Stefan Schaal. Policy gradient methods for robotics. In IROS, 2006. [93] Mike Phillips, Benjamin J Cohen, Sachin Chitta, and Maxim Likhachev. E-graphs: Bootstrapping planning with experience graphs. 2012. [94] Mike Phillips, Venkatraman Narayanan, Sandip Aine, and Maxim Likhachev. Efficient search with an ensemble of heuristics. In IJCAI, 2015. [95] Mihail Pivtoraiko, Ross A Knepper, and Alonzo Kelly. Differentially constrained mobile robot motion planning in state lattices. Journal of Field Robotics, 26(3):308333, 2009. [96] Ira Pohl. First results on the effect of error in heuristic search. Machine Intelligence, 1970.
+[97] Marc’Aurelio Ranzato, Sumit Chopra, Michael Auli, and Wojciech Zaremba. Sequence level training with recurrent neural networks. arXiv preprint arXiv:1511.06732, 2015.
+[98] Nathan D Ratliff, David Silver, and J Andrew Bagnell. Learning to search: Functional gradient techniques for imitation learning. Autonomous Robots, 27(1):25–53, 2009. [99] Stephane Ross and J Andrew Bagnell. Reinforcement and imitation learning via interactive no-regret learning. arXiv, 2014.
+[100] Ste ́phane Ross, Joelle Pineau, Se ́bastien Paquet, and Brahim Chaib-Draa. Online planning algorithms for pomdps. JAIR, 2008. [101] Ste ́phane Ross, Geoffrey J Gordon, and Drew Bagnell. A reduction of imitation learning and structured prediction to no-regret online learning. In AISTATS, volume 1, page 6, 2011. [102] Tom Schaul, John Quan, Ioannis Antonoglou, and David Silver. Prioritized experience replay. CoRR, abs/1511.05952, 2015. URL http://arxiv.org/abs/1511. 05952. [103] David Silver and Joel Veness. Monte-carlo planning in large pomdps. In NIPS, 2010. [104] David Silver, Aja Huang, Chris J Maddison, Arthur Guez, Laurent Sifre, George Van Den Driessche, Julian Schrittwieser, Ioannis Antonoglou, Veda Panneershelvam, Marc Lanctot, et al. Mastering the game of go with deep neural networks and tree search. Nature, 529 (7587):484–489, 2016. [105] Amarjeet Singh, Andreas Krause, Carlos Guestrin, William Kaiser, and Maxim Batalin. Efficient planning of informative paths for multiple robots. In IJCAI, 2007. [106] Amarjeet Singh, Andreas Krause, and William J. Kaiser. Nonmyopic adaptive informative path planning for mul
+
+
+tiple robots. In IJCAI, 2009. [107] Trey Smith and Reid Simmons. Point-based pomdp algorithms: Improved analysis and implementation. arXiv:1207.1412, 2012.
+[108] Adhiraj Somani, Nan Ye, David Hsu, and Wee Sun Lee. Despot: Online pomdp planning with regularization. In NIPS, 2013. [109] Matthijs TJ Spaan and Nikos Vlassis. Perseus: Randomized point-based value iteration for pomdps. Journal of artificial intelligence research, 24:195–220, 2005.
+[110] J. Sturm, N. Engelhard, F. Endres, W. Burgard, and D. Cremers. A benchmark for the evaluation of rgbd slam systems. In IROS, 2012. [111] Wen Sun, Arun Venkatraman, Geoffrey J Gordon, Byron Boots, and J Andrew Bagnell. Deeply aggrevated: Differentiable imitation learning for sequential prediction. In ICML, 2017. [112] Richard S Sutton and Andrew G Barto. Reinforcement learning: An introduction, volume 1. MIT press Cambridge, 1998. [113] Aviv Tamar, Garrett Thomas, Tianhao Zhang, Sergey Levine, and Pieter Abbeel. Learning from the hindsight plan–episodic mpc improvement. arXiv preprint arXiv:1609.09001, 2016.
+[114] Jordan Tyler Thayer, Austin J Dionne, and Wheeler Ruml. Learning inadmissible heuristics during search. In ICAPS, 2011. [115] Theano Development Team. Theano: A Python framework for fast computation of mathematical expressions. arXiv e-prints, abs/1605.02688, May 2016. URL http: //arxiv.org/abs/1605.02688. [116] Sebastian Thrun, Wolfram Burgard, and Dieter Fox. Probabilistic robotics. MIT press, 2005.
+[117] T. Tielman and G. Hinton. Lecture 6.5—RmsProp: Divide the gradient by a running average of its recent magnitude. COURSERA: Neural Networks for Machine Learning, 2012. [118] Jes u ́s Virseda, Daniel Borrajo, and Vidal Alca ́zar. Learning heuristic functions for cost-based planning. Planning and Learning, 2013.
+[119] Hado van Hasselt, Arthur Guez, and David Silver. Deep reinforcement learning with double q-learning. CoRR, abs/1509.06461, 2015. URL http://arxiv.org/abs/1509. 06461. [120] Arun Venkatraman, Byron Boots, Martial Hebert, and J Andrew Bagnell. Data as demonstrator with applications to system identification. In ALR Workshop, NIPS, 2014. [121] Ziyu Wang, Tom Schaul, Matteo Hessel, Hado Hasselt, Marc Lanctot, and Nando Freitas. Dueling network architectures for deep reinforcement learning. In ICML, 2016. [122] Christopher JCH Watkins and Peter Dayan. Q-learning. Machine learning, 8(3-4):279–292, 1992. [123] Christopher Makoto Wilt and Wheeler Ruml. Building a heuristic for greedy search. In Eighth Annual Sympo
+sium on Combinatorial Search, 2015.
+[124] Yuehua Xu, Alan Fern, and Sung Wook Yoon. Discriminative learning of beam-search heuristics for planning. In IJCAI, 2007. [125] Yuehua Xu, Alan Fern, and Sungwook Yoon. Learning linear ranking functions for beam search with application to planning. Journal of Machine Learning Research, 2009.
+[126] Yuehua Xu, Alan Fern, and Sung Wook Yoon. Iterative learning of weighted rule sets for greedy search. In ICAPS, 2010.
+[127] Sung Wook Yoon, Alan Fern, and Robert Givan. Learning heuristic functions from relaxed plans. In ICAPS, 2006. [128] Jingjin Yu, Mac Schwager, and Daniela Rus. Correlated orienteering problem and its application to informative path planning for persistent monitoring tasks. In IROS, 2014. [129] Haifeng Zhang and Yevgeniy Vorobeychik. Submodular optimization with routing constraints, 2016. [130] T. Zhang, G. Kahn, S. Levine, and P. Abbeel. Learning deep control policies for autonomous aerial vehicles with mpc-guided policy search. In ICRA, 2016. [131] Brian D Ziebart, Andrew L Maas, J Andrew Bagnell, and Anind K Dey. Maximum entropy inverse reinforcement learning. In AAAI, volume 8, pages 1433–1438. Chicago, IL, USA, 2008.
+APPENDIX A
+PROOF OF LEMMA 1
+Lemma. The offline imitation of clairvoyant oracle (11) is equivalent to sampling online a world from the posterior distribution and executing a hallucinating oracle as shown
+πˆ = arg max
+π∈Π
+E t∼U (1:T ), ψt∼P (ψ|π,t)
+[Q ̃πT ̃O−Rt+1(ψt, π(ψt))
+]
+Proof: We will define two loss functions on the policy. Let L1(π) be the loss function corresponding to clairvoyant oracle, i.e.
+L1(π) = E t∼U(1:T ),
+st,ψt∼P (s,ψ|π,t)
+[QπTO−Rt+1(st, π(ψt))] (25)
+Let L2(π) be the loss function corresponding to the hallucinating oracle, i.e.
+L2(π) = E t∼U(1:T ), ψt∼P (ψ|π,t)
+[Q ̃πT ̃O−Rt+1(ψt, π(ψt))
+]
+(26)
+Substituting (12) in (26) we have
+
+
+E t∼U (1:T ), ψt∼P (ψ|π,t)
+[Q ̃πT ̃O−Rt+1(ψt, π(ψt))
+]
+= E t∼U(1:T ), ψt∼P (ψ|π,t)
+[Est∼P (st|ψt)
+[QπTO−Rt+1(st, π(ψt))]]
+= Et∼U(1:T )
+
+
+∑
+ψt ,st
+P (ψt|π, t)P (st|ψt)QπTO−Rt+1(st, π(ψt))
+
+
+= Et∼U(1:T )
+
+
+∑
+ψt ,st
+P (st, ψt|π, t)QπTO−Rt+1(st, π(ψt))
+
+
+= E t∼U(1:T ),
+st,ψt∼P (s,ψ|π,t)
+[QπTO−Rt+1(st, π(ψt))]
+Hence L1(π) = L2(π).
+APPENDIX B
+PROOF OF THEOREM 1
+We begin with a statement of the performance difference lemma that is useful to bound the change in total reward-togo. This general result bounds the difference in performance of any two policies.
+Lemma 2. Let π and π′ be any two policies and denote V ̃t′
+and Q ̃′t be the t-step value function and action value function
+of policy π′ respectively, then:
+J (π) − J (π′)
+=
+T
+∑
+t=1
+Eψt∼P (ψ|π,t)
+[Q ̃ π′
+T −t+1(ψt, π(ψt)) − V ̃ π′
+T −t+1(ψt)
+]
+Proof: Let πt be the policy that executes π in first t
+timesteps and then switches to π′ fromt t + 1 to T . We then have J (π) = J (πT ) and J (π′) = J (π0). Thus:
+J (π) − J (π′)
+=
+T
+∑
+t=1
+[J (πt) − J (πt−1)]
+=
+T
+∑
+t=1
+Eψt∼P (ψ|π,t)
+[Q ̃ π′
+T −t+1(ψt, π(ψt)) − V ̃ π′
+T −t+1(ψt)
+]
+We now state the theorem and the proof
+Theorem. FORWARDTRAINING has the following guarantee
+J (πˆ) ≥ J (π ̃OR) − 2T √A εclass + T εor
+where εclass is the regression error of the learner, εor is the local oracle suboptimality.
+Proof:
+In FORWARDTRAINING, the distribution of history P (ψ|πˆ, t) is generated by the learner directly. Let the cost sensitive classification error εcs be the expected difference in action value selected by the policy and the best action, εcs =
+E t∼U (1:T ), ψt∼P (ψ|πˆ,t)
+[
+max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a) − Q ̃πT ̃O−Rt+1(ψt, πˆ(ψ))
+]
+We also define the local oracle suboptimality εor being the minimum gap between oracle value and the best action value averaged over all time-steps, i.e. εor =
+Et∼U (1:T )
+[
+mψitn
+(
+max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a) − V ̃ π ̃OR
+T −t+1(ψt)
+)]
+This can be non-zero when the oracle is sub-optimal with respect to itself at any time-step. This is true in this setting as there is no guarantee that the hallucinating oracle will pick a locally optimal actions with respect to its own value function. This is true even if the clairvoyant oracle was locally optimal as in the case of search based planning. Applying Lemma 2 with π = πˆ, π′ = π ̃OR, we have
+J (πˆ) − J (π ̃OR)
+=
+T
+∑
+t=1
+Eψt∼P (ψ|πˆ,t)
+[Q ̃πT ̃O−Rt+1(ψt, πˆ(ψt)) − V ̃ π ̃OR
+T −t+1(ψt)
+]
+=
+T
+∑
+t=1
+Eψt∼P (ψ|πˆ,t)[Q ̃πT ̃O−Rt+1(ψt, πˆ(ψt))
+− max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a)]
++
+T
+∑
+t=1
+Eψt∼P (ψ|πˆ,t)
+[
+max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a) − V ̃ π ̃OR
+T −t+1(ψt)
+]
+≥ −T εcs+
+T
+∑
+t=1
+Eψt∼P (ψ|πˆ,t)
+[
+max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a) − V ̃ π ̃OR
+T −t+1(ψt)
+]
+≥ −T εcs + T εor
+Hence we have the performance bound
+J (πˆ) ≥ J (π ̃OR) − T εcs + T εor
+Interestingly, note that if εor ≥ εcs, we would be guaranteed to do better than the hallucinating oracle. Since we reduce cost sensitive classification to regression by uniformly sampling actions, we can express εcs in terms of the regression error εclass using the reduction bound from ([69])
+εcs ≤ 2√A εclass
+Hence we have the performance bound
+J (πˆ) ≥ J (π ̃OR) − 2T √A εclass + T εor
+APPENDIX C
+PROOF OF THEOREM 2
+We follow the analysis of [99] with two main difference:
+1) [99] examine an MDP on states, we translate that to an MDP on history 2) [99] consider one step cost minimization, we consider one step reward maximization
+We borrow a couple important Lemmas from [99].
+
+
+Lemma 3. Let P and Q be any two distributions over x, let f (x) be a bounded function with range r. We then have
+|Ex∼P [f (x)] − Ex∼Q [f (x)]| ≤ r
+2 ||P − Q||1
+Lemma 4. Let P (ψ|πmix,i) be the distribution of history encountered by the mixture policy over all time steps and P (ψ|πˆi) be the distribution encountered by the learner. We have
+||P (ψ|πmix,i) − P (ψ|πˆi)||1 ≤ 2 min(1, T βi)
+We now state the theorem we wish to prove
+Theorem. N iterations of AGGREVATE, collecting m regression examples per iteration guarantees that with probability at least 1 − δ
+J (πˆ) ≥J (π ̃OR)
+− 2T
+√
+|A|
+(
+εclass + εreg + O
+(√log 1/δ/N m
+))
+−O
+( R T log T N
+)
++ T εor
+where εclass is the empirical regression regret of the best regressor in the regression class on the aggregated dataset, εreg is the empirical online learning average regret on the sequence of training examples, R is the range of oracle action value and εor is the local oracle suboptimality.
+Proof:
+We first define the local oracle suboptimality εor as in Appendix B
+εor = Et∼U(1:T )
+[
+mψitn
+(
+max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a) − V ̃ π ̃OR
+T −t+1(ψt)
+)]
+We define the average cost sensitive classification error εcs
+εcs = 1
+N
+N
+∑
+i=1
+E t∼U (1:T ),
+ψt∼P (ψ|πmix,i,t)
+[
+max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a) − Q ̃πT ̃O−Rt+1(ψt, πˆ(ψ))
+]
+Applying the performance difference lemma in Lemma 2 with π = πˆi, π′ = π ̃OR, we have
+J (πˆi) − J (π ̃OR)
+=
+T
+∑
+t=1
+Eψt∼P (ψ|πˆi,t)
+[Q ̃πT ̃O−Rt+1(ψt, πˆi(ψt)) − V ̃ π ̃OR
+T −t+1(ψt)
+]
+=
+T
+∑
+t=1
+Eψt∼P (ψ|πˆi,t)[Q ̃πT ̃O−Rt+1(ψt, πˆi(ψt))
+− max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a)]
++
+T
+∑
+t=1
+Eψt∼P (ψ|πˆi,t)
+[
+max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a) − V ̃ π ̃OR
+T −t+1(ψt)
+]
+≥
+T
+∑
+t=1
+Eψt∼P (ψ|πˆi,t)[Q ̃πT ̃O−Rt+1(ψt, πˆi(ψt))
+− max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a)]
++ T εor
+We define the range R of the maximum difference between the best and worst action value function of the oracle.
+R = max
+t,ψt
+∣ ∣ ∣ ∣
+max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a) − min
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a)
+∣ ∣ ∣ ∣
+We can then apply Lemma 3 and Lemma 4 with P (ψ|πˆi, t) and P (ψ|πmix,i, t) to get
+J (πˆi) − J (π ̃OR)
+≥
+T
+∑
+t=1
+Eψt∼P (ψ|πmix,i,t)[Q ̃πT ̃O−Rt+1(ψt, πˆi(ψt))
+− max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a)]
+−R
+2
+T
+∑
+t=1
+||P (ψ|πmix,i, t) − P (ψ|πˆi, t)||1 + T εor
+≥
+T
+∑
+t=1
+Eψt∼P (ψ|πmix,i,t)[Q ̃πT ̃O−Rt+1(ψt, πˆi(ψt))
+− max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a)]
+− R T min(1, T βi) + T εor
+If we now wish to bound the performance of the average learner over N iterations
+J (πˆavg) − J (π ̃OR)
+=1
+N
+N
+∑
+i=1
+|J (πˆi) − J (π ̃OR)|
+≥ −T εcs − R T
+N
+N
+∑
+i=1
+min(1, T βi) + T εor
+≥ −T εcs − R T
+N
+log(T ) + 2
+α + T εor
+where the last inequality follows from [99] after setting βi =
+(1 − α)i−1.
+
+
+To bound εcs, we need to define two terms: εclass, the empirical regression regret of the best regressor in the regression class on the aggregated dataset, and εreg the empirical online learning average regret on the sequence of training examples. We then use the following result from [99]
+εcs ≤ 2
+√
+|A|
+(
+εclass + εreg + O
+(√log 1/δ/N m
+))
+with probability 1 − δ. Also note that the performance of the best policy in the sequence πˆ is better than the average learner, i.e. J (πˆ) ≥ J (πˆavg).
+This results in the following bound for AGGREVATE with probability 1 − δ
+J (πˆ) ≥J (π ̃OR)
+− 2T
+√
+|A|
+(
+εclass + εreg + O
+(√log 1/δ/N m
+))
+−O
+( R T log T N
+)
++ T εor
+APPENDIX D
+PROOF OF THEOREM 3
+Theorem. N iterations of AGGREVATE with Clairvoyant one-step-reward collecting m regression examples per iteration guarantees that with probability at least 1 − δ
+J (πˆ) ≥
+(
+1− 1
+e
+)
+J (π∗)
+− 2T
+√
+|A|
+(
+εclass + εreg + O
+(√log 1/δ/N m
+))
+−O
+( R T log T N
+)
+where εclass is the empirical regression regret of the best regressor in the regression class on the aggregated dataset, εreg is the empirical online learning average regret on the sequence of training examples, R is the maximum range of one-step-reward.
+Proof: We use an important result from [36] about the near-optimality properties of greedy maximization of an adaptive montonone and adaptive submodular set function. We define a greedy policy The greedy algorithm selects a node to visit that has the highest expected marginal gain under the conditional distribution of world maps given the history. If the history of vertices visited and measurements received are where ψ = {vi}it=1, {yi}it=1, the greedy algorithm πGR(ψt) selects node to visit vt+1 with the highest expected marginal gain
+vt+1 = arg max
+v∈V
+Eφ∼P (φ|ψt)
+[∆F
+(v|{vi}it=1, φ)] (27)
+[36] show that the greedy algorithm πGR has the following guarantee
+Lemma 5. If F is adaptive monotone and adaptive submodular with respect to P (φ) and πGR is a greedy policy, then
+for all policies π∗ we have
+Eφ∼P (φ) [F (πGR, φ)] ≥
+(
+1− 1
+e
+)
+Eφ∼P (φ) [F (π∗, φ)]
+We note that for the Clairvoyant one-step-reward oracle is defined such that
+π ̃OR(ψt) = arg max
+a∈A
+Q ̃πT ̃O−Rt+1(ψt, a)
+= arg max
+vt+1 ∈V
+Eφ∼P (φ|ψ)
+[∆F
+(vt+1|{vi}it=1, φ)] (28)
+where the second inequality uses Definition 3 along with Definition 2. Hence π ̃OR = πGR. Also the local suboptimality is εor = 0 since the oracle selects actions that maximize onestep-reward. Finally the range R is that of the one step reward. Hence applying these terms along with Lemma 5 in Theorem 2, we have
+J (πˆ) ≥
+(
+1− 1
+e
+)
+J (π∗)
+− 2T
+√
+|A|
+(
+εclass + εreg + O
+(√log 1/δ/N m
+))
+−O
+( R T log T N
+)
+APPENDIX E
+MACHINE LEARNING BASELINES FOR SEARCH BASED
+PLANNING
+A. Supervised Learning (Behavior Cloning)
+The supervised learning algorithm is identical to SAIL with the key difference that roll-outs are made with πOR and not πmix,i. This is equivalent to setting the mixing parameter β = 1 across all environments. For completeness, we present the algorithm below in Alg. 6 We use m = 600 for all the environments. The network architecture and hyper-parameters used are the same as SAIL.
+B. Q Learning with Function Approximation
+We use an episodic implementation of the Q-learning algorithm which collects data in an iteration-wise manner similar to SAIL. The learner is trained on the aggregated dataset across all iterations by regressing to the TD-error. The aggregated dataset D effectively acts as an experience replay buffer to which helps in stabilizing learning when using neural network function approximation as has been suggested in recent work [85]. However,we do not use a target network or any other extensions over the original qlearning algorithm in our baselines [119, 102]. We also use only a single observation to take decisions and not a history length of past h observations for a fair comparison with SAIL which also uses a single observation. Alg. 7 describes the training procedure for the Qlearning baseline. C is the one step cost which is 1 for every expansion till goal is added to the open list. We use k = 100 and 0 = 0.9. Epsilon is decayed after every iteration in an
+
+
+Algorithm 6 Supervised Learning (P (φ), P (vs, vg))
+1: Initialize D ← ∅ 2: Collect datapoints as follows: 3: for i = 1, . . . , m do
+4: Initialize sub-dataset Di ← ∅ 5: Sample φ ∼ P (φ) 6: Sample (vs, vg) ∼ P (vs) 7: Invoke clairvoyant oracle planner to compute QOR (v, φ) ∀v ∈ V 8: Rollout a new search with πOR 9: At each timestep t pick a random action at to get corresponding (v, st) 10: Query oracle for QOR (v, φ) 11: Di ← Di ∪ 〈v, st, QOR (v, φ)〉
+12: Continue roll-out with πOR till end of episode.
+13: Append to c.s classification data D ← D ∪ Di 14: Train on D to get πˆ 15: Return πˆ
+Algorithm 7 Q-Learning (P (φ), P (vs, vg), k)
+1: Initialize D ← ∅, πˆ1 to any policy in Π 2: for i = 1, . . . , N do
+3: Initialize sub-dataset Di ← ∅ 4: Let mixture policy be πmix,i = -greedy on πˆi with i 5: Collect mk datapoints as follows: 6: for j = 1, . . . , m do 7: Sample φ ∼ P (φ) 8: Sample (vs, vg) ∼ P (vs) 9: Sample uniformly k timesteps {t1, t2, . . . , tk} where each ti ∈ {1, . . . , T } 10: Rollout a new search with πmix,i 11: At each t ∈ {t1, t2, . . . , tk}, Di ← Di ∪ 〈v, st, C, vt+1〉
+12: Continue roll-out with πmix,i till end of episode.
+13: Append to dataset D ← D ∪ Di 14: Train learner by minimizing T.D error on D to get πˆi+1
+15: Return Best πˆ on validation
+exponential manner. Network architecture and params are kept the same as SAIL.
+C. Cross Entropy Method (C.E.M)
+We use C.E.M as a derivative free optimization method for training [38]. At each iteration of the algorithm we sample batchsize = 40 set of parameters from a Gaussian Distribution. Each parameter is used to roll-out a policy on 5 environments each and the total cost is collected. The total cost (number of expansions) is used as the fitness function and the the best performing, nelite = 20% of the parameters are selected. These elite parameters are then used to create a new Gaussian distribution (using sample mean and standard deviation) for the next iteration. At the end of all iterations, the best performing
+policy on a set of held-out states is returned. For this baseline, we use a simpler neural network architecture with one hidden layer of 100 units and ReLu activation.
+APPENDIX F
+REPRESENTATION FOR SEARCH BASED PLANNING
+In order to overcome the changing sizes of the observation and action spaces in our setting, we use insight from motion planning literature and represent an entire search state in terms of closest nodes in O to a set of pre-defined attractor states and attractor paths. Attractor states are manually defined states that can be thought of as landmarks trying to pull the search cloud in different directions. Such states can be useful in pulling the search out of local minima such as a bugtrap or they could be strategic orientations of the robot or an object the robot is trying to manipulate that lead to faster solutions [3]. Attractor paths on the other hand are solutions to a small subset of environments from the training dataset. In many episodic tasks, where the structure of the environment does not change drastically between planning iterations, such path-reuse can be very useful in finding solutions faster [93]. The planning algorithm is built into the environment, and the agent only receives as an observation the nodes in the open list closest to each attractor paths/states. At each iteration then, the action that the agent performs is to select a node from the observation to expand. Although this is a generic framework that can be applied to many different problems, we chose not to use it for this work. The reason for this choice was that in this paper, our aim was to build the foundation for learning graph search heuristics as sequential decision making problem and clearly demonstrate the efficacy of the imitation learning paradigm in this domain. We found that using attractor paths/states would distract from the effectiveness of SAIL and also make learning easier for other baseline methods. In our final experiments, we instead featurize every pair (v, s) using simple information based on the search tree and the environment uncovered up until that point.
+APPENDIX G
+ANALYZING THE TIME COMPLEXITY OF SAIL
+The computational bottleneck in SAIL is the Select function which requires estimating the Q-value for every node in the open list O. Contrast this with something like Dijkstra’s algorithm which selects a node to expand in very little time, but wastes a lot of computation in excessively expanding nodes and evaluating edges. In order to analyze the usefulness of SAIL in terms of computational gains, we make the following assumptions. Firstly, we assume that the computational cost of calculating the Q-value of a single node(including feature calculation and forward pass through function approximator) is equal to the computational cost of Expand function (involves checking all edges coming out of a node for collision and calculating edge costs). This is in reality a very conservative approximation as in many high-dimensional planning problems, collision checking is way more computationally demanding as
+
+
+it requires expensive geometric intersection computations. We also ignore the computational cost of re-ordering the priorityqueue whenever a node is popped which means Dijkstra’s algorithm can select a node to expand in O(1). Given a graph with cardinality k, we obtain the following time complexities for algSail and Dijkstra’s algorithm.
+SAIL test time complexity:
+Assume SAIL did A expansions before it found a solution starting from an empty O. Also assume that states are never removed from O. Total Select complexity: O (k + 2k + 3k + . . . + Ak) = O (kA2) Total expansion complexity: O(∑A
+i=1 k) = O(Ak) From this we get total
+complexity of SAIL to be O (kA2).
+Dijkstra’s test time complexity:
+Assume Dijkstra’s algorithm does B expansions before finding a path. As mentioned earlier, we assume that priority-queue reordering can be achieved in constant time. Total Select complexity: O(1) Total expansion complexity: O (kB) From this we obtain total complexity for Dijkstra’s algorithm to be O (kB).
+From the above analysis, for SAIL to have lesser overall computational complexity than uninformed search we require the following condition to be satisfied:
+A2 < B (29)
+Thus, SAIL must obtain a squared reduction in total number of expansions for it to be computationally better than uninformed search. We argue that this strengthens the case for using SAIL in higher dimensional search graphs as in uninformed search expands a very large number of nodes as the total number of graph nodes increases.

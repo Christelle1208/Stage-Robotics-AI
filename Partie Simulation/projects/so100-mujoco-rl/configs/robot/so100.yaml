@@ -1,0 +1,46 @@
+# SO-100 robot configuration — values verified from trs_so_arm100/so_arm100.xml
+# Project-local modified XML: assets/robots/so100/so_arm100.xml
+#   (copy of the Menagerie model with ee_site added to Fixed_Jaw body)
+
+name: so100
+xml_path: assets/robots/so100/so_arm100.xml
+
+# Joint names (confirmed from so_arm100.xml <joint> elements).
+joints:
+  - Rotation
+  - Pitch
+  - Elbow
+  - Wrist_Pitch
+  - Wrist_Roll
+  - Jaw
+
+# Actuators — all are position-servo type (kp=50, dampratio=1).
+# ctrlrange inherits from joint range (inheritrange="1").
+actuators:
+  arm:
+    - Rotation
+    - Pitch
+    - Elbow
+    - Wrist_Pitch
+    - Wrist_Roll
+  gripper:
+    - Jaw
+
+# Name of the end-effector site (confirmed: added to Fixed_Jaw body in
+# assets/robots/so100/so_arm100.xml at pos="0.0 -0.088 0.0").
+end_effector_site: ee_site
+
+has_gripper: true
+
+# Joint limits in radians (confirmed from so_arm100.xml <default> blocks).
+joint_limits:
+  Rotation:    [-1.92,  1.92]
+  Pitch:       [-3.32,  0.174]
+  Elbow:       [-0.174, 3.14]
+  Wrist_Pitch: [-1.66,  1.66]
+  Wrist_Roll:  [-2.79,  2.79]
+  Jaw:         [-0.174, 1.75]
+
+# Home keyframe (from so_arm100.xml <keyframe name="home">).
+# Robot starts at this pose on every episode reset.
+home_qpos: [0.0, -1.57, 1.57, 1.57, -1.57, 0.0]

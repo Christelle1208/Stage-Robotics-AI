@@ -1,0 +1,20 @@
+<!--
+  Common assets shared across scenes: textures, materials, lighting defaults.
+  Include with: <include file="../includes/common_assets.xml"/>
+-->
+<mujoco>
+  <asset>
+    <texture name="groundplane" type="2d" builtin="checker"
+             rgb1="0.3 0.3 0.3" rgb2="0.4 0.4 0.4"
+             width="512" height="512" mark="edge" markrgb="0.8 0.8 0.8"/>
+    <material name="groundplane" texture="groundplane" texrepeat="4 4" reflectance="0.2"/>
+
+    <texture name="table_wood" type="2d" builtin="flat"
+             rgb1="0.72 0.55 0.35" width="128" height="128"/>
+    <material name="table_wood" texture="table_wood" reflectance="0.05"/>
+
+    <material name="target_material" rgba="0.2 0.8 0.2 0.4"/>
+    <material name="cube_material"   rgba="0.8 0.3 0.1 1.0"/>
+    <material name="target_sphere"   rgba="0.2 0.8 0.2 0.6"/>
+  </asset>
+</mujoco>

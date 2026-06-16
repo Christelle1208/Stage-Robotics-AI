@@ -1,0 +1,245 @@
+I0310 16:12:54.483247 8546869824 finetune_octo.py:94] Chargement du modèle pré-entraîné...
+Fetching 6 files: 100%|█████████████████████████████████████████████████████| 6/6 [00:00<00:00, 62446.21it/s]
+TensorFlow and JAX classes are deprecated and will be removed in Transformers v5. We recommend migrating to PyTorch classes or pinning your version of Transformers.
+I0310 16:12:59.508605 8546869824 octo_module.py:219] repeating task tokens at each timestep to perform cross-modal attention
+I0310 16:13:04.440869 8546869824 checkpointer.py:164] Restoring item from /Users/christelle.nollet/.cache/huggingface/hub/models--rail-berkeley--octo-small-1.5/snapshots/dc9aa3019f764726c770814b27e4ab0fc6e32a58/300000/default.
+I0310 16:13:04.713240 8546869824 checkpointer.py:166] Finished restoring checkpoint from /Users/christelle.nollet/.cache/huggingface/hub/models--rail-berkeley--octo-small-1.5/snapshots/dc9aa3019f764726c770814b27e4ab0fc6e32a58/300000/default.
+I0310 16:13:05.903172 8546869824 finetune_octo.py:50] Dataset chargé : 130 épisodes depuis so100_dataset.npz
+I0310 16:13:05.914366 8546869824 finetune_octo.py:122] Initialisation du modèle adapté SO-100...
+W0310 16:13:06.224825 8546869824 tokenizers.py:202] No language inputs found. Skipping tokenizer entirely.
+W0310 16:13:06.225172 8546869824 octo_module.py:165] Skipping task tokenizer: task_language
+W0310 16:13:06.259708 8546869824 tokenizers.py:25] No pad_mask_dict found. Nothing will be masked.
+I0310 16:13:06.264378 8546869824 octo_module.py:219] repeating task tokens at each timestep to perform cross-modal attention
+W0310 16:13:06.266012 8546869824 block_transformer.py:410] Prefix groups:
+W0310 16:13:06.266304 8546869824 block_transformer.py:418] Timestep groups:
+W0310 16:13:06.266458 8546869824 block_transformer.py:420] TimestepGroup(name=obs_primary, shape=(1, 2, 256, 384), attends_to={
+    task_*: <AttentionRule.CAUSAL: 'other.timestep <= self.timestep'>,
+    obs_*: <AttentionRule.CAUSAL: 'other.timestep <= self.timestep'>,
+})
+W0310 16:13:06.266800 8546869824 block_transformer.py:420] TimestepGroup(name=readout_action, shape=(1, 2, 1, 384), attends_to={
+    task_*: <AttentionRule.CAUSAL: 'other.timestep <= self.timestep'>,
+    obs_*: <AttentionRule.CAUSAL: 'other.timestep <= self.timestep'>,
+    readout_action: <AttentionRule.CAUSAL: 'other.timestep <= self.timestep'>,
+})
+[3m                                               Attention Mask                                                [0m
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+┃[1m                                [0m┃[1m                  [0m┃[1m [0m[1mt=0             [0m[1m [0m┃[1m                 [0m┃[1m [0m[1mt=1             [0m[1m [0m┃
+┃[1m                                [0m┃[1m [0m[1mt=0 obs_primary [0m[1m [0m┃[1m [0m[1mreadout_action  [0m[1m [0m┃[1m [0m[1mt=1 obs_primary[0m[1m [0m┃[1m [0m[1mreadout_action  [0m[1m [0m┃
+┃[1m [0m[1m                              [0m[1m [0m┃[1m [0m[1m(256 tokens)    [0m[1m [0m┃[1m [0m[1m(1 tokens)      [0m[1m [0m┃[1m [0m[1m(256 tokens)   [0m[1m [0m┃[1m [0m[1m(1 tokens)      [0m[1m [0m┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+│ t=0 obs_primary (256 tokens)   │ x                │ x                │ x               │ x                │
+├────────────────────────────────┼──────────────────┼──────────────────┼─────────────────┼──────────────────┤
+│ t=0 readout_action (1 tokens)  │                  │ x                │                 │ x                │
+├────────────────────────────────┼──────────────────┼──────────────────┼─────────────────┼──────────────────┤
+│ t=1 obs_primary (256 tokens)   │                  │                  │ x               │ x                │
+├────────────────────────────────┼──────────────────┼──────────────────┼─────────────────┼──────────────────┤
+│ t=1 readout_action (1 tokens)  │                  │                  │                 │ x                │
+└────────────────────────────────┴──────────────────┴──────────────────┴─────────────────┴──────────────────┘
+
+[3m                                             OctoModule Summary                                              [0m
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+┃[1m [0m[1mpath               [0m[1m [0m┃[1m [0m[1mmodule             [0m[1m [0m┃[1m [0m[1minputs            [0m[1m [0m┃[1m [0m[1moutputs            [0m[1m [0m┃[1m [0m[1mparams            [0m[1m [0m┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+│                     │ OctoModule          │ - image_primary:   │ - obs:              │                    │
+│                     │                     │ [2mfloat32[0m[1,2,256,2… │     mask:           │                    │
+│                     │                     │   timestep_pad_ma… │ [2mbool[0m[1,2,256]       │                    │
+│                     │                     │ [2mbool[0m[1,2]          │     tokens:         │                    │
+│                     │                     │ - image_primary:   │ [2mfloat32[0m[1,2,256,38… │                    │
+│                     │                     │ [2mfloat32[0m[1,256,256… │   obs_primary:      │                    │
+│                     │                     │ - [2mbool[0m[1,2]        │     mask:           │                    │
+│                     │                     │ - train: False     │ [2mbool[0m[1,2,256]       │                    │
+│                     │                     │   verbose: True    │     tokens:         │                    │
+│                     │                     │                    │ [2mfloat32[0m[1,2,256,38… │                    │
+│                     │                     │                    │   readout_action:   │                    │
+│                     │                     │                    │     mask:           │                    │
+│                     │                     │                    │ [2mfloat32[0m[1,2,1]      │                    │
+│                     │                     │                    │     tokens:         │                    │
+│                     │                     │                    │ [2mfloat32[0m[1,2,1,384]  │                    │
+│                     │                     │                    │ - action:           │                    │
+│                     │                     │                    │ [2mfloat32[0m[1,2,1,6]    │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ octo_transformer    │ OctoTransformer     │ - image_primary:   │ obs:                │ obs_primary_pos_e… │
+│                     │                     │ [2mfloat32[0m[1,2,256,2… │   mask:             │ [2mfloat32[0m[1,10,256,… │
+│                     │                     │   timestep_pad_ma… │ [2mbool[0m[1,2,256]       │ readout_action_po… │
+│                     │                     │ [2mbool[0m[1,2]          │   tokens:           │ [2mfloat32[0m[1,10,1,38… │
+│                     │                     │ - image_primary:   │ [2mfloat32[0m[1,2,256,38… │                    │
+│                     │                     │ [2mfloat32[0m[1,256,256… │ obs_primary:        │ [1m986,880 [0m[1;2m(3.9 MB)[0m   │
+│                     │                     │ - [2mbool[0m[1,2]        │   mask:             │                    │
+│                     │                     │ - train: False     │ [2mbool[0m[1,2,256]       │                    │
+│                     │                     │   verbose: True    │   tokens:           │                    │
+│                     │                     │                    │ [2mfloat32[0m[1,2,256,38… │                    │
+│                     │                     │                    │ readout_action:     │                    │
+│                     │                     │                    │   mask:             │                    │
+│                     │                     │                    │ [2mfloat32[0m[1,2,1]      │                    │
+│                     │                     │                    │   tokens:           │                    │
+│                     │                     │                    │ [2mfloat32[0m[1,2,1,384]  │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ encoder             │ FlaxT5Stack         │ attention_mask:    │ attentions: None    │                    │
+│                     │                     │ [2mint32[0m[1,1]         │ cross_attentions:   │                    │
+│                     │                     │ deterministic:     │ None                │                    │
+│                     │                     │ True               │ hidden_states: None │                    │
+│                     │                     │ input_ids:         │ last_hidden_state:  │                    │
+│                     │                     │ [2mint32[0m[1,1]         │ [2mfloat32[0m[1,1,768]    │                    │
+│                     │                     │ output_attentions: │ past_key_values:    │                    │
+│                     │                     │ False              │ None                │                    │
+│                     │                     │ output_hidden_sta… │                     │                    │
+│                     │                     │ False              │                     │                    │
+│                     │                     │ return_dict: True  │                     │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ shared              │ Embed               │ [2mint32[0m[1,1]         │ [2mfloat32[0m[1,1,768]    │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ encoder/dropout     │ Dropout             │ - [2mfloat32[0m[1,1,768] │ [2mfloat32[0m[1,1,768]    │                    │
+│                     │                     │ - deterministic:   │                     │                    │
+│                     │                     │ True               │                     │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ encoder/block       │ FlaxT5BlockCollect… │ - [2mfloat32[0m[1,1,768] │ attentions: None    │                    │
+│                     │                     │ - attention_mask:  │ cross_attentions:   │                    │
+│                     │                     │ [2mint32[0m[1,1]         │ None                │                    │
+│                     │                     │   deterministic:   │ hidden_states: None │                    │
+│                     │                     │ True               │ last_hidden_state:  │                    │
+│                     │                     │   encoder_attenti… │ [2mfloat32[0m[1,1,768]    │                    │
+│                     │                     │ None               │ past_key_values:    │                    │
+│                     │                     │   encoder_hidden_… │ None                │                    │
+│                     │                     │ None               │                     │                    │
+│                     │                     │   init_cache:      │                     │                    │
+│                     │                     │ False              │                     │                    │
+│                     │                     │   output_attentio… │                     │                    │
+│                     │                     │ False              │                     │                    │
+│                     │                     │   output_hidden_s… │                     │                    │
+│                     │                     │ False              │                     │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ encoder/final_laye… │ FlaxT5LayerNorm     │ [2mfloat32[0m[1,1,768]   │ [2mfloat32[0m[1,1,768]    │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ octo_transformer/t… │ LanguageTokenizer   │ - image_primary:   │ None                │                    │
+│                     │                     │ [2mfloat32[0m[1,2,256,2… │                     │                    │
+│                     │                     │   timestep_pad_ma… │                     │                    │
+│                     │                     │ [2mbool[0m[1,2]          │                     │                    │
+│                     │                     │ - image_primary:   │                     │                    │
+│                     │                     │ [2mfloat32[0m[1,256,256… │                     │                    │
+│                     │                     │ - train: False     │                     │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ octo_transformer/o… │ ImageTokenizer      │ - image_primary:   │ mask:               │ [1m1,058,048 [0m[1;2m(4.2 MB)[0m │
+│                     │                     │ [2mfloat32[0m[1,2,256,2… │ [2mfloat32[0m[1,2,256]    │                    │
+│                     │                     │   timestep_pad_ma… │ tokens:             │                    │
+│                     │                     │ [2mbool[0m[1,2]          │ [2mfloat32[0m[1,2,256,51… │                    │
+│                     │                     │ - image_primary:   │                     │                    │
+│                     │                     │ [2mfloat32[0m[1,256,256… │                     │                    │
+│                     │                     │ - train: False     │                     │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ octo_transformer/o… │ Dense               │ [2mfloat32[0m[1,2,256,5… │ [2mfloat32[0m[1,2,256,38… │ bias: [2mfloat32[0m[384] │
+│                     │                     │                    │                     │ kernel:            │
+│                     │                     │                    │                     │ [2mfloat32[0m[512,384]   │
+│                     │                     │                    │                     │                    │
+│                     │                     │                    │                     │ [1m196,992 [0m[1;2m(788.0 KB)[0m │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ octo_transformer/B… │ BlockTransformer    │ - []               │ - []                │ [1m21,294,336 [0m[1;2m(85.2 [0m  │
+│                     │                     │ - -                │ - -                 │ [1;2mMB)[0m                │
+│                     │                     │ attention_rules:   │ attention_rules:    │                    │
+│                     │                     │       obs_*:       │       obs_*:        │                    │
+│                     │                     │ <AttentionRule.CA… │ <AttentionRule.CAU… │                    │
+│                     │                     │ other.timestep <=  │ other.timestep <=   │                    │
+│                     │                     │ self.timestep>     │ self.timestep>      │                    │
+│                     │                     │       task_*:      │       task_*:       │                    │
+│                     │                     │ <AttentionRule.CA… │ <AttentionRule.CAU… │                    │
+│                     │                     │ other.timestep <=  │ other.timestep <=   │                    │
+│                     │                     │ self.timestep>     │ self.timestep>      │                    │
+│                     │                     │     mask:          │     mask:           │                    │
+│                     │                     │ [2mbool[0m[1,2,256]      │ [2mbool[0m[1,2,256]       │                    │
+│                     │                     │     name:          │     name:           │                    │
+│                     │                     │ obs_primary        │ obs_primary         │                    │
+│                     │                     │     tokens:        │     tokens:         │                    │
+│                     │                     │ [2mfloat32[0m[1,2,256,3… │ [2mfloat32[0m[1,2,256,38… │                    │
+│                     │                     │   -                │   -                 │                    │
+│                     │                     │ attention_rules:   │ attention_rules:    │                    │
+│                     │                     │       obs_*:       │       obs_*:        │                    │
+│                     │                     │ <AttentionRule.CA… │ <AttentionRule.CAU… │                    │
+│                     │                     │ other.timestep <=  │ other.timestep <=   │                    │
+│                     │                     │ self.timestep>     │ self.timestep>      │                    │
+│                     │                     │       readout_act… │       readout_acti… │                    │
+│                     │                     │ <AttentionRule.CA… │ <AttentionRule.CAU… │                    │
+│                     │                     │ other.timestep <=  │ other.timestep <=   │                    │
+│                     │                     │ self.timestep>     │ self.timestep>      │                    │
+│                     │                     │       task_*:      │       task_*:       │                    │
+│                     │                     │ <AttentionRule.CA… │ <AttentionRule.CAU… │                    │
+│                     │                     │ other.timestep <=  │ other.timestep <=   │                    │
+│                     │                     │ self.timestep>     │ self.timestep>      │                    │
+│                     │                     │     mask:          │     mask:           │                    │
+│                     │                     │ [2mfloat32[0m[1,2,1]     │ [2mfloat32[0m[1,2,1]      │                    │
+│                     │                     │     name:          │     name:           │                    │
+│                     │                     │ readout_action     │ readout_action      │                    │
+│                     │                     │     tokens:        │     tokens:         │                    │
+│                     │                     │ [2mfloat32[0m[1,2,1,384] │ [2mfloat32[0m[1,2,1,384]  │                    │
+│                     │                     │ - train: False     │                     │                    │
+│                     │                     │   verbose: True    │                     │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ heads_action        │ L1ActionHead        │ - obs:             │ [2mfloat32[0m[1,2,1,6]    │                    │
+│                     │                     │     mask:          │                     │                    │
+│                     │                     │ [2mbool[0m[1,2,256]      │                     │                    │
+│                     │                     │     tokens:        │                     │                    │
+│                     │                     │ [2mfloat32[0m[1,2,256,3… │                     │                    │
+│                     │                     │   obs_primary:     │                     │                    │
+│                     │                     │     mask:          │                     │                    │
+│                     │                     │ [2mbool[0m[1,2,256]      │                     │                    │
+│                     │                     │     tokens:        │                     │                    │
+│                     │                     │ [2mfloat32[0m[1,2,256,3… │                     │                    │
+│                     │                     │   readout_action:  │                     │                    │
+│                     │                     │     mask:          │                     │                    │
+│                     │                     │ [2mfloat32[0m[1,2,1]     │                     │                    │
+│                     │                     │     tokens:        │                     │                    │
+│                     │                     │ [2mfloat32[0m[1,2,1,384] │                     │                    │
+│                     │                     │ - train: False     │                     │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ heads_action/map_h… │ MAPHead             │ - mask:            │ [2mfloat32[0m[1,2,1,384]  │ probe:             │
+│                     │                     │ [2mfloat32[0m[1,2,1]     │                     │ [2mfloat32[0m[1,1,384]   │
+│                     │                     │   tokens:          │                     │                    │
+│                     │                     │ [2mfloat32[0m[1,2,1,384] │                     │ [1m1,774,080 [0m[1;2m(7.1 MB)[0m │
+│                     │                     │ - train: False     │                     │                    │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│ heads_action/mean_… │ Dense               │ [2mfloat32[0m[1,2,384]   │ [2mfloat32[0m[1,2,6]      │ bias: [2mfloat32[0m[6]   │
+│                     │                     │                    │                     │ kernel:            │
+│                     │                     │                    │                     │ [2mfloat32[0m[384,6]     │
+│                     │                     │                    │                     │                    │
+│                     │                     │                    │                     │ [1m2,310 [0m[1;2m(9.2 KB)[0m     │
+├─────────────────────┼─────────────────────┼────────────────────┼─────────────────────┼────────────────────┤
+│[1m [0m[1m                   [0m[1m [0m│[1m [0m[1m                   [0m[1m [0m│[1m [0m[1m                  [0m[1m [0m│[1m [0m[1m              Total[0m[1m [0m│[1m [0m[1m25,312,646 [0m[1;2m(101.3 [0m[1m [0m│
+│[1m                     [0m│[1m                     [0m│[1m                    [0m│[1m                     [0m│[1m [0m[1;2mMB)[0m[1m               [0m[1m [0m│
+└─────────────────────┴─────────────────────┴────────────────────┴─────────────────────┴────────────────────┘
+[1m                                                                                                             [0m
+[1m                                   Total Parameters: 25,312,646 [0m[1;2m(101.3 MB)[0m[1m                                   [0m
+W0310 16:13:09.368916 8546869824 tokenizers.py:202] No language inputs found. Skipping tokenizer entirely.
+W0310 16:13:09.369200 8546869824 octo_module.py:165] Skipping task tokenizer: task_language
+W0310 16:13:09.401963 8546869824 tokenizers.py:25] No pad_mask_dict found. Nothing will be masked.
+I0310 16:13:09.406625 8546869824 octo_module.py:219] repeating task tokens at each timestep to perform cross-modal attention
+I0310 16:13:24.442326 8546869824 train_utils.py:405] ########## Parameters skipped during model loading: ##########
+I0310 16:13:24.442651 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.LayerNorm_0.bias
+I0310 16:13:24.442843 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.LayerNorm_0.scale
+I0310 16:13:24.443042 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MlpBlock_0.Dense_0.bias
+I0310 16:13:24.443315 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MlpBlock_0.Dense_0.kernel
+I0310 16:13:24.443593 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MlpBlock_0.Dense_1.bias
+I0310 16:13:24.443777 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MlpBlock_0.Dense_1.kernel
+I0310 16:13:24.443861 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MultiHeadDotProductAttention_0.key.bias
+I0310 16:13:24.444058 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MultiHeadDotProductAttention_0.key.kernel
+I0310 16:13:24.444260 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MultiHeadDotProductAttention_0.out.bias
+I0310 16:13:24.444384 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MultiHeadDotProductAttention_0.out.kernel
+I0310 16:13:24.444461 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MultiHeadDotProductAttention_0.query.bias
+I0310 16:13:24.444540 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MultiHeadDotProductAttention_0.query.kernel
+I0310 16:13:24.444614 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MultiHeadDotProductAttention_0.value.bias
+I0310 16:13:24.444771 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.MultiHeadDotProductAttention_0.value.kernel
+I0310 16:13:24.445190 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.map_head.probe
+I0310 16:13:24.445412 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.mean_proj.bias
+I0310 16:13:24.445628 8546869824 train_utils.py:407] Param missing in pre-trained model, skipping: heads_action.mean_proj.kernel
+I0310 16:13:24.478618 8546869824 train_utils.py:250] Freezing parameters that include the following keys: ['*hf_model*'].
+I0310 16:13:24.480516 8546869824 train_utils.py:286] Num trainable params: 25,312,646.
+I0310 16:13:24.480683 8546869824 train_utils.py:287] Num frozen params: 0.
+I0310 16:13:24.480846 8546869824 train_utils.py:288] To see a detailed list of frozen params, set logging level to DEBUG.
+I0310 16:13:24.802001 8546869824 finetune_octo.py:176] Démarrage du finetuning...
+  0%|                                                                               | 0/5000 [00:00<?, ?it/s]W0310 16:13:25.129566 8546869824 tokenizers.py:202] No language inputs found. Skipping tokenizer entirely.
+W0310 16:13:25.129864 8546869824 octo_module.py:165] Skipping task tokenizer: task_language
+W0310 16:13:25.239009 8546869824 tokenizers.py:25] No pad_mask_dict found. Nothing will be masked.
+I0310 16:13:25.245422 8546869824 octo_module.py:219] repeating task tokens at each timestep to perform cross-modal attention
+  0%|                                                                    | 8/5000 [04:52<45:19:11, 32.68s/it]Exception ignored in: <function _xla_gc_callback at 0x100e24ee0>
+Traceback (most recent call last):
+  File "/Users/christelle.nollet/miniconda3/envs/octo/lib/python3.10/site-packages/jax/_src/lib/__init__.py", line 101, in _xla_gc_callback
+    def _xla_gc_callback(*args):
+KeyboardInterrupt:
+  0%|                                                                    | 9/5000 [05:24<44:41:56, 32.24s/it]

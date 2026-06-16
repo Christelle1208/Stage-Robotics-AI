@@ -1,0 +1,120 @@
+INFO 2026-03-04 10:27:19 db_utils.py:117 [1m[34mLogs will be synced with wandb.[0m
+INFO 2026-03-04 10:27:19 db_utils.py:118 Track this run --> [1m[33mhttps://wandb.ai/christelle-nollet-octo-technology/lerobot/runs/8hiqp4p1[0m
+INFO 2026-03-04 10:27:19 ot_train.py:215 Creating dataset
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: GET https://huggingface.co/api/datasets/lerobot/svla_so101_pickplace/refs "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: GET https://huggingface.co/api/datasets/lerobot/svla_so101_pickplace/revision/v3.0 "HTTP/1.1 200 OK"
+Downloading (incomplete total...): 0.00B [00:00, ?B/s]                                                 INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: HEAD https://huggingface.co/datasets/lerobot/svla_so101_pickplace/resolve/f641879e22172be7e8161d5e6c1503c2d2feb657/meta/info.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: HEAD https://huggingface.co/datasets/lerobot/svla_so101_pickplace/resolve/f641879e22172be7e8161d5e6c1503c2d2feb657/meta/episodes/chunk-000/file-000.parquet "HTTP/1.1 302 Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING 2026-03-04 10:27:19 ls/_http.py:857 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/lerobot/svla_so101_pickplace/f641879e22172be7e8161d5e6c1503c2d2feb657/meta%2Finfo.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: HEAD https://huggingface.co/datasets/lerobot/svla_so101_pickplace/resolve/f641879e22172be7e8161d5e6c1503c2d2feb657/meta/stats.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: HEAD https://huggingface.co/datasets/lerobot/svla_so101_pickplace/resolve/f641879e22172be7e8161d5e6c1503c2d2feb657/meta/tasks.parquet "HTTP/1.1 302 Found"
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/lerobot/svla_so101_pickplace/f641879e22172be7e8161d5e6c1503c2d2feb657/meta%2Fstats.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: GET https://huggingface.co/api/resolve-cache/datasets/lerobot/svla_so101_pickplace/f641879e22172be7e8161d5e6c1503c2d2feb657/meta%2Finfo.json "HTTP/1.1 200 OK"
+Downloading (incomplete total...): 3.40kB [00:00, 10.2kB/s]INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: GET https://huggingface.co/api/resolve-cache/datasets/lerobot/svla_so101_pickplace/f641879e22172be7e8161d5e6c1503c2d2feb657/meta%2Fstats.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: GET https://huggingface.co/api/datasets/lerobot/svla_so101_pickplace/xet-read-token/f641879e22172be7e8161d5e6c1503c2d2feb657 "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:19 _client.py:1025 HTTP Request: GET https://huggingface.co/api/datasets/lerobot/svla_so101_pickplace/xet-read-token/f641879e22172be7e8161d5e6c1503c2d2feb657 "HTTP/1.1 200 OK"
+Fetching 4 files: 100%|██████████████████████████████████████████████████| 4/4 [00:02<00:00,  1.96it/s]
+Download complete: : 84.1kB [00:02, 38.6kB/s]              ██████████████| 4/4 [00:02<00:00,  2.49it/s]
+INFO 2026-03-04 10:27:21 eo_utils.py:106 Using video codec: libsvtav1
+INFO 2026-03-04 10:27:21 _client.py:1025 HTTP Request: GET https://huggingface.co/api/datasets/lerobot/svla_so101_pickplace/refs "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:21 _client.py:1025 HTTP Request: GET https://huggingface.co/api/datasets/lerobot/svla_so101_pickplace/revision/v3.0 "HTTP/1.1 200 OK"
+Downloading (incomplete total...): 0.00B [00:00, ?B/s]                                                 INFO 2026-03-04 10:27:22 _client.py:1025 HTTP Request: HEAD https://huggingface.co/datasets/lerobot/svla_so101_pickplace/resolve/f641879e22172be7e8161d5e6c1503c2d2feb657/README.md "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:22 _client.py:1025 HTTP Request: HEAD https://huggingface.co/datasets/lerobot/svla_so101_pickplace/resolve/f641879e22172be7e8161d5e6c1503c2d2feb657/.gitattributes "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:22 _client.py:1025 HTTP Request: HEAD https://huggingface.co/datasets/lerobot/svla_so101_pickplace/resolve/f641879e22172be7e8161d5e6c1503c2d2feb657/videos/observation.images.side/chunk-000/file-000.mp4 "HTTP/1.1 302 Found"
+Downloading (incomplete total...):   0%|                                   | 0.00/45.5M [00:00<?, ?B/s]INFO 2026-03-04 10:27:22 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/lerobot/svla_so101_pickplace/f641879e22172be7e8161d5e6c1503c2d2feb657/README.md "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:22 _client.py:1025 HTTP Request: GET https://huggingface.co/api/resolve-cache/datasets/lerobot/svla_so101_pickplace/f641879e22172be7e8161d5e6c1503c2d2feb657/README.md "HTTP/1.1 200 OK"
+Downloading (incomplete total...):   0%|                          | 3.71k/45.5M [00:00<42:02, 18.1kB/s]INFO 2026-03-04 10:27:22 _client.py:1025 HTTP Request: HEAD https://huggingface.co/datasets/lerobot/svla_so101_pickplace/resolve/f641879e22172be7e8161d5e6c1503c2d2feb657/videos/observation.images.up/chunk-000/file-000.mp4 "HTTP/1.1 302 Found"
+Downloading (incomplete total...):   0%|                        | 3.71k/85.7M [00:00<1:19:05, 18.1kB/s]INFO 2026-03-04 10:27:22 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/lerobot/svla_so101_pickplace/f641879e22172be7e8161d5e6c1503c2d2feb657/.gitattributes "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:22 _client.py:1025 HTTP Request: GET https://huggingface.co/api/resolve-cache/datasets/lerobot/svla_so101_pickplace/f641879e22172be7e8161d5e6c1503c2d2feb657/.gitattributes "HTTP/1.1 200 OK"
+Downloading (incomplete total...):   0%|                        | 6.17k/85.7M [00:00<1:10:58, 20.1kB/s]INFO 2026-03-04 10:27:22 _client.py:1025 HTTP Request: HEAD https://huggingface.co/datasets/lerobot/svla_so101_pickplace/resolve/f641879e22172be7e8161d5e6c1503c2d2feb657/data/chunk-000/file-000.parquet "HTTP/1.1 302 Found"
+Fetching 9 files: 100%|██████████████████████████████████████████████████| 9/9 [00:05<00:00,  1.68it/s]
+Download complete: : 86.0MB [00:05, 20.7MB/s]              INFO 2026-03-04 10:27:27 ot_train.py:233 Creating policy
+Download complete: : 86.0MB [00:05, 15.8MB/s]
+Loading  HuggingFaceTB/SmolVLM2-500M-Video-Instruct weights ...
+INFO 2026-03-04 10:27:27 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:27 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/config.json "HTTP/1.1 200 OK"
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights: 100%|█| 489/489 [00:01<00:00, 260.53it/s, Materializing param=model.vision_model.post_
+INFO 2026-03-04 10:27:29 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:29 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/generation_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:29 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:29 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:29 _client.py:1025 HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:27:30 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:30 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:30 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/chat_template.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:30 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/chat_template.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:30 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:27:30 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/chat_template.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/chat_template.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:31 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/tokenizer_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:32 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/tokenizer_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:33 _client.py:1025 HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:27:33 _client.py:1025 HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:33 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:33 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:33 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:27:33 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:33 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/preprocessor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:33 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:33 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/processor_config.json "HTTP/1.1 200 OK"
+INFO 2026-03-04 10:27:34 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+INFO 2026-03-04 10:27:34 _client.py:1025 HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO 2026-03-04 10:27:34 _client.py:1025 HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/7b375e1b73b11138ff12fe22c8f2822d8fe03467/preprocessor_config.json "HTTP/1.1 200 OK"
+Reducing the number of VLM layers to 16 ...
+INFO 2026-03-04 10:27:36 _client.py:1025 HTTP Request: HEAD https://huggingface.co/masato-ka/SO100_act_generalize_pick_pos_smolvla_40k/resolve/main/model.safetensors "HTTP/1.1 302 Found"
+INFO 2026-03-04 10:27:36 _client.py:1025 HTTP Request: GET https://huggingface.co/api/models/masato-ka/SO100_act_generalize_pick_pos_smolvla_40k/xet-read-token/454dcd81da4f83c7f302d170efd34c590c525345 "HTTP/1.1 200 OK"
+model.safetensors: 100%|████████████████████████████████████████████| 907M/907M [00:38<00:00, 23.7MB/s]
+WARNING 2026-03-04 10:28:16 ies/utils.py:94 Unexpected key(s) when loading model: ['normalize_inputs.buffer_observation_state.mean', 'normalize_inputs.buffer_observation_state.std', 'normalize_targets.buffer_action.mean', 'normalize_targets.buffer_action.std', 'unnormalize_outputs.buffer_action.mean', 'unnormalize_outputs.buffer_action.std']
+Traceback (most recent call last):
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/scripts/lerobot_train.py", line 536, in <module>
+    main()
+    ~~~~^^
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/scripts/lerobot_train.py", line 532, in main
+    train()
+    ~~~~~^^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/lerobot/configs/parser.py", line 233, in wrapper_inner
+    response = fn(cfg, *args, **kwargs)
+  File "/Users/christelle.nollet/Desktop/ROBOT/lerobot/src/lerobot/scripts/lerobot_train.py", line 234, in train
+    policy = make_policy(
+        cfg=cfg.policy,
+        ds_meta=dataset.meta,
+        rename_map=cfg.rename_map,
+    )
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/lerobot/policies/factory.py", line 526, in make_policy
+    validate_visual_features_consistency(cfg, features)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/lerobot/policies/utils.py", line 249, in validate_visual_features_consistency
+    raise_feature_mismatch_error(provided_visuals, expected_visuals)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/christelle.nollet/miniconda3/lib/python3.13/site-packages/lerobot/policies/utils.py", line 214, in raise_feature_mismatch_error
+    raise ValueError(
+    ...<8 lines>...
+    )
+ValueError: Feature mismatch between dataset/environment and policy config.
+- Missing features: ['observation.images.front', 'observation.images.wrist.right']
+- Extra features: ['observation.images.side', 'observation.images.up']
+
+Please ensure your dataset and policy use consistent feature names.
+If your dataset uses different observation keys (e.g., cameras named differently), use the `--rename_map` argument, for example:
+  --rename_map='{"observation.images.left": "observation.images.camera1", "observation.images.top": "observation.images.camera2"}'

@@ -1,0 +1,13 @@
+{
+  "task": "pick_place",
+  "model": "hf://rail-berkeley/octo-small-1.5",
+  "n_episodes": 1,
+  "mean_reward": 0.27349716817814,
+  "success_rate": 0.0,
+  "per_episode": [
+    {
+      "reward": 0.27349716817814,
+      "success": false
+    }
+  ]
+}

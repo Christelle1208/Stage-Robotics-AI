@@ -1,0 +1,58 @@
+Skip to main content
+Computer Science > Robotics
+arXiv:2602.11464 (cs)
+[Submitted on 12 Feb 2026]
+EasyMimic: A Low-Cost Framework for Robot Imitation Learning from Human Videos
+Tao Zhang, Song Xia, Ye Wang, Qin Jin
+View PDF
+HTML (experimental)
+Robot imitation learning is often hindered by the high cost of collecting large-scale, real-world data. This challenge is especially significant for low-cost robots designed for home use, as they must be both user-friendly and affordable. To address this, we propose the EasyMimic framework, a low-cost and replicable solution that enables robots to quickly learn manipulation policies from human video demonstrations captured with standard RGB cameras. Our method first extracts 3D hand trajectories from the videos. An action alignment module then maps these trajectories to the gripper control space of a low-cost robot. To bridge the human-to-robot domain gap, we introduce a simple and user-friendly hand visual augmentation strategy. We then use a co-training method, fine-tuning a model on both the processed human data and a small amount of robot data, enabling rapid adaptation to new tasks. Experiments on the low-cost LeRobot platform demonstrate that EasyMimic achieves high performance across various manipulation tasks. It significantly reduces the reliance on expensive robot data collection, offering a practical path for bringing intelligent robots into homes. Project website: this https URL.
+Comments:	icra 2026
+Subjects:	Robotics (cs.RO)
+Cite as:	arXiv:2602.11464 [cs.RO]
+ 	(or arXiv:2602.11464v1 [cs.RO] for this version)
+ 	
+https://doi.org/10.48550/arXiv.2602.11464
+Focus to learn more
+Submission history
+From: Tao Zhang [view email]
+[v1] Thu, 12 Feb 2026 00:41:01 UTC (1,074 KB)
+
+Access Paper:
+View PDFHTML (experimental)TeX Source
+view license
+Current browse context: cs.RO
+< prev next >
+
+newrecent2026-02
+Change to browse by: cs
+References & Citations
+NASA ADS
+Google Scholar
+Semantic Scholar
+Export BibTeX Citation
+Bookmark
+Bibliographic Tools
+Bibliographic and Citation Tools
+Bibliographic Explorer Toggle
+Bibliographic Explorer (What is the Explorer?)
+Connected Papers Toggle
+Connected Papers (What is Connected Papers?)
+Litmaps Toggle
+Litmaps (What is Litmaps?)
+scite.ai Toggle
+scite Smart Citations (What are Smart Citations?)
+Code, Data, Media
+Demos
+Related Papers
+About arXivLabs
+Which authors of this paper are endorsers? | Disable MathJax (What is MathJax?)
+About
+Help
+Contact
+Subscribe
+Copyright
+Privacy Policy
+Web Accessibility Assistance
+
+arXiv Operational Status 

@@ -1,0 +1,37 @@
+{
+  "os":  "macOS-15.7.3-arm64-arm-64bit",
+  "python":  "CPython 3.10.19",
+  "startedAt":  "2026-03-10T15:06:00.121182Z",
+  "args":  [
+    "--pretrained_path=hf://rail-berkeley/octo-small-1.5",
+    "--data_path=so100_dataset.npz",
+    "--save_dir=./octo_so100_finetuned"
+  ],
+  "program":  "/Users/christelle.nollet/Desktop/ROBOT/finetune_octo.py",
+  "codePath":  "finetune_octo.py",
+  "codePathLocal":  "finetune_octo.py",
+  "email":  "christelle.nollet@octo.com",
+  "root":  "/Users/christelle.nollet/Desktop/ROBOT",
+  "host":  "AMAFJDJF06J6K",
+  "executable":  "/Users/christelle.nollet/miniconda3/envs/octo/bin/python",
+  "cpu_count":  10,
+  "cpu_count_logical":  10,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "127005872128"
+    }
+  },
+  "memory":  {
+    "total":  "34359738368"
+  },
+  "apple":  {
+    "name":  "Apple M1 Pro",
+    "ecpuCores":  2,
+    "pcpuCores":  8,
+    "gpuCores":  16,
+    "memoryGb":  32,
+    "ramTotalBytes":  "34359738368"
+  },
+  "writerId":  "gfocu4io4hq0cvgxa98iwpg5qlgdp3bz"
+}

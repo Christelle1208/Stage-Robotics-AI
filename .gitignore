@@ -12,3 +12,9 @@ venv/
 
 # OS
 .DS_Store
+
+# Large local artifacts
+ROBOT/Miniconda3-latest-MacOSX-arm64.sh
+ROBOT/AA-UNUSED/so100_dataset.npz
+Partie Simulation/projects/clean-pickdrop/app/runs/**/replay_buffer.pkl
+Partie Simulation/projects/clean-pickdrop/app/runs/**/_stray_sac_replay_buffer.pkl.bak
